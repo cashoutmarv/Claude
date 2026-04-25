@@ -34,10 +34,13 @@ export const ECONOMY = {
 // Single source of truth for IAP prices/values. Real money values are set
 // in App Store Connect / Play Console; these are display fallbacks +
 // gem amounts granted on successful purchase.
+//
+// Policy: any successful purchase (including a $0.99 Gem pack S) grants
+// permanent ad-free as a thank-you to paying players. There is no
+// standalone "Remove Ads" SKU — see iap.js.
 export const IAP_CATALOG = {
-  pass:        { id: "adv_pass",     price: "$4.99/mo", gemsPerDay: 50,           xpMul: 1.5 },
-  starter:     { id: "starter_pack", price: "$1.99",    gems: 300,  bonusRelicTier: "rare" },
-  removeAds:   { id: "remove_ads",   price: "$3.99" },
+  pass:        { id: "adv_pass",     price: "$4.99/mo", gemsPerDay: 50, xpMul: 1.5 },
+  starter:     { id: "starter_pack", price: "$1.99",    gems: 1000, bonusRelicTier: "rare", bonusEpicRelic: true, bonusFrame: "starter" },
   gem_s:       { id: "gem_s",        price: "$0.99",    gems: 100  },
   gem_m:       { id: "gem_m",        price: "$4.99",    gems: 600  },
   gem_l:       { id: "gem_l",        price: "$9.99",    gems: 1300 },

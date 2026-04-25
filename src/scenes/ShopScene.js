@@ -34,8 +34,7 @@ export class ShopScene extends Phaser.Scene {
 
     const items = [
       { def: IAP_CATALOG.pass, group: "subscription", subtitle: "+50 gems/day, +50% XP, exclusive frame" },
-      { def: IAP_CATALOG.starter, group: "starter", subtitle: "+300 ◇ + Rare relic + cosmetic", oneTime: true, owned: s.iap.starterPackBought },
-      { def: IAP_CATALOG.removeAds, group: "remove_ads", subtitle: "Hide all ad buttons, rewards still grant", oneTime: true, owned: s.iap.adFreeOwned },
+      { def: IAP_CATALOG.starter, group: "starter", subtitle: "1,000 ◇ + Rare relic + Epic relic + frame", oneTime: true, owned: s.iap.starterPackBought },
       { def: IAP_CATALOG.gem_s, group: "gems", subtitle: "100 ◇" },
       { def: IAP_CATALOG.gem_m, group: "gems", subtitle: "600 ◇  (best value)" },
       { def: IAP_CATALOG.gem_l, group: "gems", subtitle: "1,300 ◇" },
@@ -43,7 +42,16 @@ export class ShopScene extends Phaser.Scene {
       { def: IAP_CATALOG.gem_xxl, group: "gems", subtitle: "16,000 ◇" },
     ];
 
-    let y = 110;
+    // Policy banner — every purchase removes ads.
+    this.add.text(width / 2, 90,
+      s.iap.adFreeOwned
+        ? "✓ Ad-free unlocked. Thanks for your support."
+        : "Every purchase grants permanent ad-free.",
+      { fontFamily: "system-ui, sans-serif", fontSize: "12px",
+        color: s.iap.adFreeOwned ? "#4ade80" : "#9aa0c0", fontStyle: "italic" }
+    ).setOrigin(0.5);
+
+    let y = 116;
     const cardH = 64;
     const cardW = Math.min(560, width - 32);
     for (const item of items) {

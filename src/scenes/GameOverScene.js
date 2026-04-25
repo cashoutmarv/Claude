@@ -79,13 +79,24 @@ export class GameOverScene extends Phaser.Scene {
     const isFirstRevive = this.runRevives === 0;
     const adFree = Ads.isAdFreeOwned();
 
-    if (this.onRevive && isFirstRevive && !adFree) {
-      buttons.push({
-        label: "Revive (Watch Ad)",
-        sub: "free",
-        color: 0xffd166, textColor: "#0b0b14",
-        action: () => this.requestReviveByAd(),
-      });
+    if (this.onRevive && isFirstRevive) {
+      // Ad-free supporters get the first revive truly free — no ad
+      // viewing, no gem spend. Otherwise the player can watch an ad.
+      if (adFree) {
+        buttons.push({
+          label: "Revive",
+          sub: "free (supporter)",
+          color: 0x4ade80, textColor: "#0b0b14",
+          action: () => this.acceptFreeRevive(),
+        });
+      } else {
+        buttons.push({
+          label: "Revive (Watch Ad)",
+          sub: "free",
+          color: 0xffd166, textColor: "#0b0b14",
+          action: () => this.requestReviveByAd(),
+        });
+      }
     }
     if (this.onRevive) {
       buttons.push({
@@ -156,6 +167,12 @@ export class GameOverScene extends Phaser.Scene {
       this.scene.stop();
       this.onRevive();
     }
+  }
+
+  acceptFreeRevive() {
+    if (!this.onRevive) return;
+    this.scene.stop();
+    this.onRevive();
   }
 
   requestReviveByGems(cost) {

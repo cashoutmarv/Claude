@@ -60,16 +60,20 @@ are a secondary income stream and a grind-relief tool for F2P players.
 
 Early-game gems come almost entirely from one-shot **first-time
 achievements** (first kill, first level up, first boss kill, survive 5 min,
-etc.) so new players feel a steady drip of premium currency for ~1 week
-before the IAP surface becomes the natural next step. See
-`src/config/achievements.js`.
+etc.). The achievement table is sized so a brand-new player accumulates
+roughly **9,000 gems = ~10 ten-pulls** of free pulls over their first
+~3–4 weeks of play, after which the drip slows and the natural next step
+is the Adventurer's Pass or a gem pack. See `src/config/achievements.js`.
 
-### Item tiers (5 levels)
+### Item tiers (5 levels for v1)
 
 Common → Uncommon → Rare → Epic → Legendary.
 Applies to characters, weapons, and relics. Higher tier = higher stat
 ceiling and visual polish. Duplicates from gacha convert to **shards** that
 level the existing item (1 → 30), so dupes are never wasted.
+
+> **Mythic** is reserved for a post-launch update once the game has a
+> player base — adding it pre-launch would dilute Legendary too soon.
 
 ### Items
 
@@ -89,14 +93,19 @@ Two banners:
 - **Featured banner** (rotates every 2-3 weeks). Pulls cost gems. Drives
   reactivation; rate-up on a featured Legendary character.
 
-Rates and pity:
+Rates and pity (tuned to feel fair, not predatory):
 
-- Common 75%, Uncommon 18%, Rare 6%, Epic 0.9%, Legendary 0.1% (base).
-- Soft pity: Legendary chance ramps from pull 60 onward.
-- Hard pity: guaranteed Legendary by pull 80.
+- Common 65%, Uncommon 21%, Rare 10%, Epic 3.5%, Legendary 0.5% (base).
+- Soft pity: Legendary chance ramps from pull 50 onward.
+- Hard pity: guaranteed Legendary by pull 70.
 - 10-pull discount: 10% off, guaranteed Rare-or-better in every 10.
-- Every pull also drops "exchange tokens" usable on a permanent shop —
-  no pull is ever wasted.
+- **Selector tokens** drop 1 per pull and persist forever across banners.
+  Spend them in the Selector Shop:
+  - 30 tokens → pick any Rare item
+  - 80 tokens → pick any Epic item
+  - **150 tokens → pick any Legendary character** (≈ 150 pulls or roughly
+    one $99.99 XXL gem pack, so the absolute worst-case spend to get a
+    specific Legendary is ~$100, never higher).
 
 Compliance: published odds in-game, region check (Belgium/Netherlands
 restrict paid loot boxes — those regions get gold-only pulls).
@@ -139,8 +148,13 @@ receipt validation, trial management, and cross-device entitlement sync.
 | Gem pack L | $9.99 | consumable (1,300 gems) |
 | Gem pack XL | $49.99 | consumable (7,500 gems) |
 | Gem pack XXL | $99.99 | consumable (16,000 gems) |
-| Starter pack | $1.99 | one-time (gems + Rare relic + cosmetic) |
-| Remove ads option | $3.99 | one-time (hides all ad buttons) |
+| Starter pack | $1.99 | one-time (1,000 gems + Rare relic + Epic relic + cosmetic frame) |
+
+**Any IAP purchase grants permanent ad-free** as a thank-you to paying
+players. There is no standalone "Remove Ads" SKU — the cheapest path to
+ad-free is a $0.99 Gem pack S, which also grants 100 gems. Players who
+support the game financially never have ads suggested to them again
+(rewarded surfaces are simply hidden; rewards still grant via gems).
 
 ### Ad placements (player-initiated only)
 

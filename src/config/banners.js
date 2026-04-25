@@ -6,18 +6,28 @@
 // banner narrows the Legendary pool to a specific item (rate-up).
 
 export const RATES_BASE = {
-  common:    0.7500,
-  uncommon:  0.1800,
-  rare:      0.0600,
-  epic:      0.0090,
-  legendary: 0.0010,
+  common:    0.6500,
+  uncommon:  0.2100,
+  rare:      0.1000,
+  epic:      0.0350,
+  legendary: 0.0050,
 };
 
 export const PITY = {
-  softPityFrom: 60,
-  hardPity: 80,
+  softPityFrom: 50,
+  hardPity: 70,
   // 10-pull: guaranteed Rare or better on the 10th if no Rare+ rolled.
   tenPullGuaranteeTier: "rare",
+};
+
+// Selector tokens — earned 1 per pull, redeemable for any item of the
+// listed tier. The Legendary path (150 tokens ≈ 150 pulls ≈ one $99.99 gem
+// pack) is the *hard* guarantee that no player ever spends more than ~$100
+// to get a specific Legendary character.
+export const SELECTOR_COSTS = {
+  rare: 30,
+  epic: 80,
+  legendary: 150,
 };
 
 // Default pool — every non-starter item is eligible. Featured banner

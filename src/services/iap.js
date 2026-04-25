@@ -36,19 +36,24 @@ export const IAP = {
     const usd = priceUsd(product.price);
     if (usd > 0) VIP.addPoints(Math.round(usd));
 
-    // Apply effects.
-    if (product.id === "remove_ads") {
-      Storage.mutate((s) => { s.iap.adFreeOwned = true; });
-    } else if (product.id === "starter_pack") {
+    // Apply effects per product.
+    if (product.id === "starter_pack") {
       Storage.mutate((s) => { s.iap.starterPackBought = true; });
       addGems(product.gems, "starter_pack");
-      // Grant a Rare relic — pick the first Rare in the catalog.
-      grant("hardy_amulet");
+      // Bundle: 1 Rare relic + 1 Epic relic. (Cosmetic frame is granted
+      // implicitly by the `bonusFrame` flag on the catalog entry — wired
+      // when the cosmetics service lands.)
+      grant("hardy_amulet"); // Rare
+      grant("greedy_horn");  // Epic
     } else if (product.id === "adv_pass") {
       Subscription.activate();
     } else if (product.gems) {
       addGems(product.gems, product.id);
     }
+
+    // Policy: ANY successful purchase grants permanent ad-free as a
+    // thank-you. There is no standalone "Remove Ads" SKU.
+    Storage.mutate((s) => { s.iap.adFreeOwned = true; });
 
     return { success: true, productId: product.id };
   },
