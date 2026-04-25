@@ -1,7 +1,9 @@
 import { PLAYER, WEAPONS, ARENA, XP } from "../config/balance.js";
 
 export class Player {
-  constructor(scene, x, y) {
+  // `initialStats` is the merged stat object after applying equipped
+  // character / relics / VIP / subscription. If omitted, defaults are used.
+  constructor(scene, x, y, initialStats = null) {
     this.scene = scene;
     this.sprite = scene.physics.add.image(x, y, "player");
     this.sprite.setCircle(14, 2, 2);
@@ -9,12 +11,18 @@ export class Player {
     this.sprite.setDepth(10);
     this.sprite.setData("ref", this);
 
-    this.hp = PLAYER.maxHp;
+    // Stats are mutable — upgrades multiply/add into these.
+    this.stats = initialStats || Player.defaultStats();
+    this.hp = this.stats.maxHp;
     this.alive = true;
     this.invulnUntil = 0;
 
-    // Stats are mutable — upgrades multiply/add into these.
-    this.stats = {
+    this.regenAccum = 0;
+    this.lastShotAt = 0;
+  }
+
+  static defaultStats() {
+    return {
       maxHp: PLAYER.maxHp,
       speedMul: 1,
       damageMul: 1,
@@ -25,10 +33,8 @@ export class Player {
       regenPerSec: 0,
       orbCount: 0,
       xpMul: 1,
+      goldMul: 1,
     };
-
-    this.regenAccum = 0;
-    this.lastShotAt = 0;
   }
 
   get x() { return this.sprite.x; }

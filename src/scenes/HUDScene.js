@@ -1,6 +1,7 @@
 import { UpgradeSystem } from "../systems/UpgradeSystem.js";
+import { installAchievementToast } from "../ui/AchievementToast.js";
 
-// Overlay scene: HP/XP bars, run timer, level, kills.
+// Overlay scene: HP/XP bars, run timer, level, kills, run gold.
 // Reads state directly from GameScene each frame.
 
 export class HUDScene extends Phaser.Scene {
@@ -13,6 +14,7 @@ export class HUDScene extends Phaser.Scene {
   create() {
     const { width } = this.scale;
     const pad = 12;
+    installAchievementToast(this);
 
     // HP bar.
     this.hpBg   = this.add.rectangle(pad, pad, width - pad * 2, 14, 0x1a1a2a, 0.8).setOrigin(0).setDepth(100);
@@ -30,6 +32,11 @@ export class HUDScene extends Phaser.Scene {
       fontFamily: "system-ui, sans-serif", fontSize: "14px", color: "#cfd2e6",
     }).setDepth(100);
 
+    // Run gold (centered).
+    this.goldText = this.add.text(width / 2, pad + 32, "", {
+      fontFamily: "system-ui, sans-serif", fontSize: "14px", color: "#ffd166", fontStyle: "bold",
+    }).setOrigin(0.5, 0).setDepth(100);
+
     this.levelText = this.add.text(width - pad, pad + 32, "", {
       fontFamily: "system-ui, sans-serif", fontSize: "14px", color: "#ffe28a", fontStyle: "bold",
     }).setOrigin(1, 0).setDepth(100);
@@ -44,6 +51,7 @@ export class HUDScene extends Phaser.Scene {
     this.hpBg.setSize(size.width - pad * 2, 14);
     this.xpBg.setSize(size.width - pad * 2, 8);
     this.hpText.setX(size.width / 2);
+    this.goldText.setX(size.width / 2);
     this.levelText.setX(size.width - pad);
   }
 
@@ -67,6 +75,7 @@ export class HUDScene extends Phaser.Scene {
     const m = Math.floor(g.elapsedSec / 60);
     const s = Math.floor(g.elapsedSec % 60).toString().padStart(2, "0");
     this.statsText.setText(`${m}:${s}    Kills ${g.kills}`);
+    this.goldText.setText(`+${(g.goldEarnedThisRun || 0).toLocaleString()} ◆`);
     this.levelText.setText(`LVL ${g.level}`);
   }
 }

@@ -1,4 +1,5 @@
 import { ARENA, PLAYER, WEAPONS, XP } from "../config/balance.js";
+import { ECONOMY } from "../config/economy.js";
 import { Player } from "../entities/Player.js";
 import { Enemy } from "../entities/Enemy.js";
 import { Projectile } from "../entities/Projectile.js";
@@ -6,6 +7,12 @@ import { XPGem } from "../entities/XPGem.js";
 import { WaveDirector } from "../systems/WaveDirector.js";
 import { UpgradeSystem } from "../systems/UpgradeSystem.js";
 import { Joystick } from "../systems/Joystick.js";
+import { applyEquippedToStats } from "../services/inventory.js";
+import { VIP } from "../services/vip.js";
+import { Subscription } from "../services/subscription.js";
+import { Achievements, onUnlock } from "../services/achievements.js";
+import { addGold, addGems } from "../services/currency.js";
+import { Storage } from "../services/storage.js";
 
 export class GameScene extends Phaser.Scene {
   constructor() { super("GameScene"); }
@@ -27,8 +34,13 @@ export class GameScene extends Phaser.Scene {
     this.projectiles = [];
     this.orbs = []; // visual + logic for orbiting shards
 
+    // Build the player's starting stats from equipment + VIP + subscription.
+    const stats = applyEquippedToStats(Player.defaultStats());
+    VIP.applyToStats(stats);
+    Subscription.applyToStats(stats);
+
     // Player.
-    this.player = new Player(this, ARENA.width / 2, ARENA.height / 2);
+    this.player = new Player(this, ARENA.width / 2, ARENA.height / 2, stats);
 
     // Camera.
     this.cameras.main.startFollow(this.player.sprite, true, 0.12, 0.12);
@@ -39,12 +51,21 @@ export class GameScene extends Phaser.Scene {
     this.startTime = this.time.now;
     this.elapsedSec = 0;
     this.kills = 0;
+    this.bossKills = 0;
     this.level = 1;
     this.xp = 0;
     this.xpToNext = UpgradeSystem.xpForLevel(2);
     this.pendingLevels = 0;
     this.upgradeSystem = new UpgradeSystem();
-    this.usedRevive = false;
+    this.runRevives = 0;        // how many times the player has revived this run
+    this.goldEarnedThisRun = 0; // for run-end summary
+    this.runAchievementsUnlocked = []; // for run-end summary
+    this._lastSurviveTickSec = 0; // for periodic survive_seconds achievement firing
+
+    // Listen for achievements unlocked during the run so we can surface them
+    // in the game-over summary.
+    this._achievementUnsub = onUnlock((a) => this.runAchievementsUnlocked.push(a));
+    this.events.once("shutdown", () => this._achievementUnsub && this._achievementUnsub());
 
     // Weapons timing.
     this.lastShotAt = 0;
@@ -101,6 +122,7 @@ export class GameScene extends Phaser.Scene {
       this.level += 1;
       this.pendingLevels += 1;
       this.xpToNext = UpgradeSystem.xpForLevel(this.level + 1);
+      Achievements.fire("level_up", this.level);
     }
     this.gems.delete(gem);
     gem.destroy();
@@ -119,6 +141,20 @@ export class GameScene extends Phaser.Scene {
   killEnemy(enemy) {
     if (!this.enemies.has(enemy)) return;
     this.kills += 1;
+
+    // Gold drop scales with enemy XP value (bosses give a lot more).
+    const baseGold = ECONOMY.goldPerKillBase + ECONOMY.goldPerKillXpMul * enemy.xp;
+    const gold = Math.max(1, Math.round(baseGold * (this.player.stats.goldMul || 1)));
+    addGold(gold);
+    this.goldEarnedThisRun += gold;
+
+    // Achievement triggers.
+    Achievements.fire("kill", 1);
+    if (enemy.type === "boss") {
+      this.bossKills += 1;
+      Achievements.fire("boss_kill", 1);
+    }
+
     this.spawnGem(enemy.x, enemy.y, enemy.xp);
     this.enemies.delete(enemy);
     enemy.destroy();
@@ -231,22 +267,48 @@ export class GameScene extends Phaser.Scene {
   endRun() {
     if (this._ending) return;
     this._ending = true;
+
+    // Save run records and lifetime counters.
+    Storage.mutate((s) => {
+      s.totalRuns += 1;
+      if (this.elapsedSec > s.bestTimeSec) s.bestTimeSec = this.elapsedSec;
+      if (this.kills > s.bestKills) s.bestKills = this.kills;
+    });
+
+    // Fire achievements: death + run_end.
+    Achievements.fire("death", 1);
+    Achievements.fire("run_end", 1);
+
+    // New-player bonus on first 5 runs.
+    const totalRuns = Storage.load().totalRuns;
+    if (totalRuns <= ECONOMY.newPlayerRunBonusRuns) {
+      addGold(ECONOMY.newPlayerRunBonusGold, "new_player_bonus");
+      this.goldEarnedThisRun += ECONOMY.newPlayerRunBonusGold;
+    }
+    addGold(ECONOMY.goldRunCompletionFlat, "run_completion");
+    this.goldEarnedThisRun += ECONOMY.goldRunCompletionFlat;
+
     this.scene.stop("HUDScene");
     // Pause (not stop) so we can resume on revive without losing run state.
     this.scene.pause();
     this.scene.launch("GameOverScene", {
       kills: this.kills,
+      bossKills: this.bossKills,
       timeSec: this.elapsedSec,
       level: this.level,
-      usedRevive: this.usedRevive,
+      runRevives: this.runRevives,
+      goldEarned: this.goldEarnedThisRun,
+      achievementsThisRun: this.runAchievementsUnlocked.slice(),
       onRevive: () => this.handleRevive(),
     });
   }
 
-  // Called from GameOverScene when the player accepts a rewarded-ad revive.
+  // Called from GameOverScene when the player chooses to revive (ad or gems).
   handleRevive() {
     this._ending = false;
-    this.usedRevive = true;
+    this.runRevives += 1;
+    Achievements.fire("revive_used", 1);
+    Storage.mutate((s) => { s.lifetime.revives += 1; });
     this.player.reviveFull();
     // Clear nearby enemies to give a breather.
     for (const e of [...this.enemies]) {
@@ -294,6 +356,13 @@ export class GameScene extends Phaser.Scene {
     for (const e of this.enemies) e.update(this.player.x, this.player.y, now);
     for (const g of this.gems) g.update(this.player.x, this.player.y, this.player.pickupRadius);
     for (const p of this.projectiles) p.update(dtMs);
+
+    // Survive-seconds achievement firing — once per second is plenty.
+    const surviveSec = Math.floor(this.elapsedSec);
+    if (surviveSec > this._lastSurviveTickSec) {
+      this._lastSurviveTickSec = surviveSec;
+      Achievements.fire("survive_seconds", surviveSec);
+    }
 
     if (!this.player.alive) this.endRun();
   }

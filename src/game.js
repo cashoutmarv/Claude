@@ -1,9 +1,13 @@
 import { BootScene } from "./scenes/BootScene.js";
-import { MenuScene } from "./scenes/MenuScene.js";
+import { HomeScene } from "./scenes/HomeScene.js";
 import { GameScene } from "./scenes/GameScene.js";
 import { HUDScene } from "./scenes/HUDScene.js";
 import { UpgradeScene } from "./scenes/UpgradeScene.js";
 import { GameOverScene } from "./scenes/GameOverScene.js";
+import { GachaScene } from "./scenes/GachaScene.js";
+import { ShopScene } from "./scenes/ShopScene.js";
+import { InventoryScene } from "./scenes/InventoryScene.js";
+import { VIPScene } from "./scenes/VIPScene.js";
 
 const config = {
   type: Phaser.AUTO,
@@ -22,7 +26,18 @@ const config = {
   fps: { target: 60, smoothStep: true },
   render: { pixelArt: false, antialias: true },
   input: { activePointers: 3 },
-  scene: [BootScene, MenuScene, GameScene, HUDScene, UpgradeScene, GameOverScene],
+  scene: [
+    BootScene,
+    HomeScene,
+    GameScene,
+    HUDScene,
+    UpgradeScene,
+    GameOverScene,
+    GachaScene,
+    ShopScene,
+    InventoryScene,
+    VIPScene,
+  ],
 };
 
 // eslint-disable-next-line no-new
