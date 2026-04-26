@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Icebreaker AI — Cold Email Openers in One Click</title>
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+<main class="wrap">
+  <header>
+    <h1>Icebreaker AI</h1>
+    <p class="sub">Personalized cold-email openers in one click. No API keys, no setup.</p>
+  </header>
+
+  <form id="form" class="form">
+    <label>Recipient's name
+      <input id="name" type="text" placeholder="Sarah" required />
+    </label>
+    <label>Company
+      <input id="company" type="text" placeholder="Notion" required />
+    </label>
+    <label>One specific fact
+      <input id="fact" type="text" placeholder="recently launched a podcast about productivity" required />
+    </label>
+    <button type="submit" class="btn primary">Generate</button>
+  </form>
+
+  <section id="output" class="output hidden">
+    <h2>Your opener</h2>
+    <p id="email"></p>
+    <div class="actions">
+      <button id="copy" class="btn ghost">Copy</button>
+      <button id="regen" class="btn ghost">Regenerate</button>
+    </div>
+  </section>
+
+  <a class="upsell" href="https://buy.stripe.com/your-link-here" target="_blank" rel="noopener">
+    Get 50 more openers for $1 →
+  </a>
+</main>
+<script src="script.js"></script>
+</body>
+</html>

@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Fridge Chef — Recipes from What You've Got</title>
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+<main class="wrap">
+  <header>
+    <h1>Fridge Chef <span class="emoji">🍳</span></h1>
+    <p class="sub">Type 3–5 ingredients you have. Get matched recipe ideas.</p>
+  </header>
+
+  <div class="search">
+    <input id="ingredients" placeholder="e.g. eggs, spinach, garlic, parmesan" />
+    <button id="cook" class="btn">Cook up ideas</button>
+  </div>
+
+  <section id="results" class="results"></section>
+
+  <a class="tip" href="https://buy.stripe.com/your-link-here" target="_blank" rel="noopener">
+    Tip the chef · $1
+  </a>
+
+  <footer>Made with love · 100% offline · No data leaves your browser</footer>
+</main>
+<script src="recipes.js"></script>
+<script src="script.js"></script>
+</body>
+</html>
