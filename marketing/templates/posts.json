@@ -1,0 +1,123 @@
+{
+  "platforms": {
+    "x": { "charLimit": 280, "hashtagBudget": 3, "linkCounts": "23 chars" },
+    "tiktok": { "captionMax": 2200, "hashtagBudget": 5, "videoLen": "15-60s portrait 9:16" },
+    "youtube_shorts": { "captionMax": 100, "hashtagBudget": 3, "videoLen": "<=60s portrait 9:16" },
+    "reddit": { "titleMax": 300, "subreddits": ["iosgaming", "AndroidGaming", "IncrementalGames", "roguelikes", "gamedev", "IndieDev"] },
+    "discord": { "channel": "#announcements" }
+  },
+  "variables": {
+    "game": "Dungeon Drift",
+    "handle": "@dungeondrift",
+    "site": "dungeondrift.game",
+    "store_ios": "TBD",
+    "store_android": "TBD",
+    "discord_invite": "TBD"
+  },
+  "templates": [
+    {
+      "id": "teaser_announce",
+      "phase": "T-8w",
+      "platform": "x",
+      "asset": "logo + first screenshot",
+      "copy": "Building a one-finger roguelike survivor for mobile.\n\nAuto-fire, dodge, level up, die, run again.\nNo forced ads. Ever.\n\nFollow along: {handle}\n\n#indiedev #gamedev #roguelike"
+    },
+    {
+      "id": "teaser_announce_tiktok",
+      "phase": "T-8w",
+      "platform": "tiktok",
+      "asset": "10s gameplay loop, no UI",
+      "hook_first_2s": "POV: you have 60 seconds before the dungeon eats you.",
+      "copy": "{game} — coming soon to iOS & Android. One thumb. Endless runs. No banner ads. Wishlist: {site}\n\n#gamedev #indiegame #roguelike #mobilegaming #vampiresurvivors"
+    },
+    {
+      "id": "devlog_weekly_x",
+      "phase": "ongoing",
+      "platform": "x",
+      "asset": "GIF of the feature in motion",
+      "copy": "Devlog #{n}: {feature_one_liner}\n\n{detail_2_lines}\n\nWhat would you tweak?\n\n#gamedev #indiedev"
+    },
+    {
+      "id": "feature_spotlight_boss",
+      "phase": "T-6w",
+      "platform": "tiktok",
+      "asset": "30s clip: walk into boss arena → fight → win",
+      "hook_first_2s": "Every 2 minutes a boss spawns. Here's #1.",
+      "copy": "Boss reveal in {game}. Auto-fire roguelike, one thumb to play. Dropping on iOS & Android.\n\n#bossfight #indiegame #roguelike #mobilegames #gamedev"
+    },
+    {
+      "id": "feature_spotlight_weapons",
+      "phase": "T-5w",
+      "platform": "x",
+      "asset": "side-by-side GIF of 4 weapons",
+      "copy": "4 of the 14 weapons in {game}.\n\nEach scales differently with crit, fire rate, and pierce. Build paths matter even in a 10-min run.\n\n#gamedev #roguelike #indiedev"
+    },
+    {
+      "id": "monetization_promise",
+      "phase": "T-4w",
+      "platform": "x",
+      "asset": "screenshot of shop screen",
+      "copy": "{game}'s monetization promise:\n\n- No banners\n- No interstitials\n- No forced video\n- ANY paid purchase = permanent ad-free\n- Cheapest path to ad-free is $0.99\n\nIf you tap nothing, you see nothing.\n\n#gamedev #indiedev"
+    },
+    {
+      "id": "reddit_devlog_long",
+      "phase": "T-4w",
+      "platform": "reddit",
+      "subreddit": "IndieDev",
+      "title": "I'm 8 weeks from launching my first mobile roguelike. Here's the monetization model I picked.",
+      "body": "Hey r/IndieDev — I'm a solo dev finishing up {game}, a one-finger roguelike survivor for iOS & Android. I want to share the monetization choices I made and get torn apart for them.\n\n**Hard rules I committed to:**\n- No interstitial ads, no banners, no forced video\n- Only player-initiated rewarded video (revive, reroll upgrade, double daily reward)\n- Any IAP — even a $0.99 gem pack — grants permanent ad-free\n- Gacha hard-pity at 70 pulls; selector tokens drop every pull and never expire (worst-case ~150 pulls / ~$100 to pick a specific Legendary)\n- No PvP, so power can't be pay-to-win\n\n**What I'm worried about:** ARPDAU comparison vs. games that interstitial-spam. Is the rewarded-only model really viable in 2026, or am I just leaving money on the table to feel good?\n\nDemo: {site}\n\nHappy to answer anything — balance numbers, tech (Phaser+Capacitor), UA plan, all of it."
+    },
+    {
+      "id": "preregistration_cta",
+      "phase": "T-2w",
+      "platform": "x",
+      "asset": "countdown card",
+      "copy": "{game} pre-registration is OPEN.\n\nSign up and get:\n- 500 starter gems\n- Exclusive cosmetic frame\n- Day-one bonus pull\n\n📱 {store_android}\n📱 {store_ios}\n\n14 days to launch.\n\n#mobilegames #indiedev"
+    },
+    {
+      "id": "countdown_daily",
+      "phase": "T-1w",
+      "platform": "tiktok",
+      "asset": "different 15s clip per day; counter overlay",
+      "hook_first_2s": "{n} days until {game}",
+      "copy": "Day {n} of countdown. {hook_per_day}\n\nWishlist: {site}\n\n#countdown #gamedev #indiegame #roguelike #mobilegaming"
+    },
+    {
+      "id": "launch_day_x",
+      "phase": "launch",
+      "platform": "x",
+      "asset": "launch trailer (60s)",
+      "copy": "🚀 {game} is OUT NOW on iOS & Android.\n\nFree to play. No banner ads, no interstitials. The roguelike survivor I've been building for 18 months is finally live.\n\niOS: {store_ios}\nAndroid: {store_android}\n\nRT to help a solo dev. 🙏"
+    },
+    {
+      "id": "launch_day_reddit_iosgaming",
+      "phase": "launch",
+      "platform": "reddit",
+      "subreddit": "iosgaming",
+      "title": "[Free] Dungeon Drift — one-finger roguelike survivor, no ads if you ever spend a cent",
+      "body": "Hey r/iosgaming, I just launched {game}. It's a Vampire-Survivors-style auto-shooter built for one-thumb mobile play.\n\n**The pitch:**\n- Short runs (5–15 min), permadeath, procgen waves\n- Random level-up upgrades from a deep pool\n- Meta progression: characters, weapons, relics across 5 rarities\n- Fair gacha: hard pity at 70, selector tokens never expire\n\n**Monetization (I know this matters here):**\n- Zero banners, zero interstitials, zero forced video\n- Rewarded video is opt-in only (revive on death, reroll upgrades)\n- ANY IAP grants permanent ad-free — cheapest path is $0.99\n- No PvP, so nothing is pay-to-win\n\nAppStore: {store_ios}\n\nI'm in the comments all day."
+    },
+    {
+      "id": "post_launch_player_highlight",
+      "phase": "post-launch",
+      "platform": "tiktok",
+      "asset": "user-submitted clip with permission",
+      "copy": "{player_handle} cleared 18 minutes in {game} with a pierce-only build. The math on this is unreal.\n\nDownload: {site}\n\n#gameplay #roguelike #indiegame #mobilegaming"
+    },
+    {
+      "id": "milestone_thanks",
+      "phase": "post-launch",
+      "platform": "x",
+      "asset": "screenshot of download counter",
+      "copy": "{n} players have tried {game}.\n\nThank you. Genuinely.\n\nWhat should I build next? Reply with the most-wanted feature.\n\n#gamedev #indiedev"
+    },
+    {
+      "id": "shorts_seven_things",
+      "phase": "ongoing",
+      "platform": "youtube_shorts",
+      "asset": "fast-cut 45s edit",
+      "hook_first_2s": "7 things you didn't know about {game}",
+      "copy": "{game} — out now. Auto-fire roguelike for mobile. {site}\n\n#shorts #gamedev #roguelike"
+    }
+  ]
+}

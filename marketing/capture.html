@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Dungeon Drift — Capture Frame</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <style>
+    html, body { margin: 0; height: 100%; background: #000; overflow: hidden;
+      display: flex; align-items: center; justify-content: center;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif; }
+    .frame {
+      width: 390px; height: 844px;
+      border: 0; background: #0b0b14;
+      box-shadow: 0 0 80px rgba(73, 214, 255, 0.18);
+      border-radius: 28px;
+    }
+    body.show-border .frame { outline: 2px solid #49d6ff; }
+    .label {
+      position: fixed; top: 12px; left: 12px; color: #49d6ff;
+      font-size: 11px; letter-spacing: 1px; text-transform: uppercase;
+      background: rgba(0,0,0,0.5); padding: 4px 8px; border-radius: 4px;
+      pointer-events: none;
+    }
+    body:not(.show-label) .label { display: none; }
+  </style>
+</head>
+<body>
+  <div class="label">REC · 390x844 · 9:16</div>
+  <iframe class="frame" src="../index.html" allow="autoplay; fullscreen"></iframe>
+  <script>
+    // Toggle helpers via URL params:
+    //   ?border  → show a cyan outline (off by default for clean recording)
+    //   ?label   → show the REC label (off by default for clean recording)
+    //   ?size=W,H → custom frame dimensions, e.g. ?size=1080,1920 for raw export
+    const p = new URLSearchParams(location.search);
+    if (p.has("border")) document.body.classList.add("show-border");
+    if (p.has("label"))  document.body.classList.add("show-label");
+    const sz = p.get("size");
+    if (sz) {
+      const [w, h] = sz.split(",").map(Number);
+      const f = document.querySelector(".frame");
+      if (w && h) { f.style.width = w + "px"; f.style.height = h + "px"; }
+    }
+  </script>
+</body>
+</html>

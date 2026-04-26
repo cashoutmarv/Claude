@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dungeon Drift — Press Kit</title>
+  <meta name="description" content="Dungeon Drift is a one-finger roguelike survivor for iOS and Android. Auto-fire, dodge, level up, die, run again." />
+  <meta property="og:title" content="Dungeon Drift" />
+  <meta property="og:description" content="A one-finger roguelike survivor for mobile. Built by an indie studio, no forced ads." />
+  <meta property="og:image" content="./assets/cover.png" />
+  <style>
+    :root {
+      --bg: #0b0b14;
+      --panel: #14141f;
+      --line: #1f1f30;
+      --text: #e8e8f0;
+      --muted: #9aa0c0;
+      --accent: #49d6ff;
+      --gold: #ffd166;
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; background: var(--bg); color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif; line-height: 1.55; }
+    a { color: var(--accent); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    header { padding: 64px 24px 32px; text-align: center; border-bottom: 1px solid var(--line); }
+    h1 { margin: 0 0 8px; font-size: 44px; letter-spacing: 1px; color: var(--accent); text-shadow: 0 0 18px rgba(73,214,255,.35); }
+    .tagline { color: var(--muted); font-size: 16px; margin: 0; }
+    main { max-width: 980px; margin: 0 auto; padding: 32px 24px 96px; }
+    section { margin: 40px 0; }
+    h2 { font-size: 22px; color: var(--gold); border-bottom: 1px solid var(--line); padding-bottom: 8px; }
+    .factsheet { display: grid; grid-template-columns: 180px 1fr; gap: 8px 16px; }
+    .factsheet dt { color: var(--muted); }
+    .factsheet dd { margin: 0; }
+    ul.features { padding-left: 20px; }
+    ul.features li { margin: 6px 0; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px; }
+    .grid img { width: 100%; height: 100%; object-fit: cover; background: var(--panel); border: 1px solid var(--line); border-radius: 8px; aspect-ratio: 9/16; }
+    .placeholder { background: var(--panel); border: 1px dashed var(--line); border-radius: 8px; aspect-ratio: 9/16;
+      display: flex; align-items: center; justify-content: center; color: var(--muted); font-size: 12px; padding: 12px; text-align: center; }
+    .row { display: flex; flex-wrap: wrap; gap: 12px; }
+    .pill { display: inline-block; padding: 6px 12px; border: 1px solid var(--line); border-radius: 999px;
+      background: var(--panel); color: var(--text); font-size: 13px; }
+    .quote { background: var(--panel); border-left: 3px solid var(--accent); padding: 12px 16px; border-radius: 0 8px 8px 0; color: var(--muted); font-style: italic; }
+    footer { text-align: center; color: var(--muted); font-size: 12px; padding: 32px 16px; border-top: 1px solid var(--line); }
+    code { background: var(--panel); padding: 2px 6px; border-radius: 4px; color: var(--gold); }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>DUNGEON DRIFT</h1>
+    <p class="tagline">A one-finger roguelike survivor for iOS &amp; Android.</p>
+    <div class="row" style="justify-content:center; margin-top:16px;">
+      <span class="pill">Roguelike</span>
+      <span class="pill">Survivor / Bullet Heaven</span>
+      <span class="pill">Mobile-first</span>
+      <span class="pill">F2P · No forced ads</span>
+    </div>
+  </header>
+
+  <main>
+    <section>
+      <h2>Description</h2>
+      <p>
+        Dungeon Drift is a top-down auto-shooter roguelike built for one-thumb play.
+        Move with a virtual joystick; weapons fire themselves at the nearest threat.
+        Survive escalating waves, choose from random level-up upgrades, fight bosses
+        every two minutes, and roll meta progression between runs &mdash; new
+        characters, weapons, and relics earned from gold or fair-rate gacha.
+      </p>
+      <p class="quote">
+        &ldquo;A 5&ndash;15 minute coffee-break roguelike. Die fast, learn faster,
+        run again.&rdquo;
+      </p>
+    </section>
+
+    <section>
+      <h2>Fact Sheet</h2>
+      <dl class="factsheet">
+        <dt>Developer</dt><dd>Cashout Studio (solo)</dd>
+        <dt>Based in</dt><dd>TBD</dd>
+        <dt>Founding date</dt><dd>2026</dd>
+        <dt>Platforms</dt><dd>iOS (App Store), Android (Google Play), Web (browser demo)</dd>
+        <dt>Engine</dt><dd>Phaser 3 + Capacitor</dd>
+        <dt>Release date</dt><dd>TBD &mdash; soft launch summer 2026</dd>
+        <dt>Price</dt><dd>Free to play. Optional IAP from $0.99. No ads for paying players.</dd>
+        <dt>Languages</dt><dd>English at launch; localization planned</dd>
+        <dt>Website</dt><dd><a href="#">dungeondrift.game</a> (TBD)</dd>
+        <dt>Press contact</dt><dd><a href="mailto:press@example.com">press@example.com</a></dd>
+        <dt>Social</dt><dd>
+          <a href="#">@dungeondrift</a> on X &middot;
+          <a href="#">TikTok</a> &middot;
+          <a href="#">YouTube</a> &middot;
+          <a href="#">Discord</a>
+        </dd>
+      </dl>
+    </section>
+
+    <section>
+      <h2>Features</h2>
+      <ul class="features">
+        <li>One-finger controls &mdash; auto-fire weapons, virtual joystick movement.</li>
+        <li>Short, replayable runs (5&ndash;15 minutes) with permadeath and procedural waves.</li>
+        <li>Random level-up upgrades each run from a deep pool of weapons and passives.</li>
+        <li>Meta progression: characters, weapons, and relics with 5 rarity tiers.</li>
+        <li>Fair gacha with hard pity at 70 pulls and selector tokens that never expire.</li>
+        <li>Player-respecting monetization: no banners, no interstitials, no forced video.</li>
+        <li>Any IAP grants permanent ad-free as a thank-you.</li>
+      </ul>
+    </section>
+
+    <section>
+      <h2>Screenshots</h2>
+      <p style="color:var(--muted); font-size:13px; margin-top:0;">
+        Drop PNGs into <code>marketing/assets/screenshots/</code> as
+        <code>01.png</code>&hellip;<code>06.png</code> (9:16 mobile portrait).
+      </p>
+      <div class="grid">
+        <img src="../assets/screenshots/01.png" alt="Screenshot 1" onerror="this.outerHTML='&lt;div class=placeholder&gt;screenshot 01&lt;/div&gt;'" />
+        <img src="../assets/screenshots/02.png" alt="Screenshot 2" onerror="this.outerHTML='&lt;div class=placeholder&gt;screenshot 02&lt;/div&gt;'" />
+        <img src="../assets/screenshots/03.png" alt="Screenshot 3" onerror="this.outerHTML='&lt;div class=placeholder&gt;screenshot 03&lt;/div&gt;'" />
+        <img src="../assets/screenshots/04.png" alt="Screenshot 4" onerror="this.outerHTML='&lt;div class=placeholder&gt;screenshot 04&lt;/div&gt;'" />
+        <img src="../assets/screenshots/05.png" alt="Screenshot 5" onerror="this.outerHTML='&lt;div class=placeholder&gt;screenshot 05&lt;/div&gt;'" />
+        <img src="../assets/screenshots/06.png" alt="Screenshot 6" onerror="this.outerHTML='&lt;div class=placeholder&gt;screenshot 06&lt;/div&gt;'" />
+      </div>
+    </section>
+
+    <section>
+      <h2>Trailer / Gameplay</h2>
+      <p style="color:var(--muted); font-size:13px;">
+        Embed YouTube once the launch trailer is up. For raw clips, link
+        <a href="../assets/clips/">marketing/assets/clips/</a>.
+      </p>
+    </section>
+
+    <section>
+      <h2>Try the Demo</h2>
+      <p>
+        A browser build of the current development version is at
+        <a href="../../index.html">/index.html</a>.
+        Best on a phone in portrait mode.
+      </p>
+    </section>
+
+    <section>
+      <h2>About the Studio</h2>
+      <p>
+        Cashout Studio is a solo indie developer building short, polished mobile
+        games designed to respect the player&rsquo;s time and wallet. Dungeon Drift is
+        the first title; future titles will reskin the same engine with new
+        themes and mechanics.
+      </p>
+    </section>
+  </main>
+
+  <footer>
+    &copy; 2026 Cashout Studio. Press kit template available at this URL.
+  </footer>
+</body>
+</html>
