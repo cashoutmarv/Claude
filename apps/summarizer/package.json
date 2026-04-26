@@ -1,0 +1,13 @@
+{
+  "name": "text-summarizer",
+  "version": "1.0.0",
+  "description": "Paste text, get an AI summary. $1 per use.",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

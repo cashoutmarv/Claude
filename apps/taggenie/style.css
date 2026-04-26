@@ -1,0 +1,123 @@
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  background: linear-gradient(135deg, #f9ce34 0%, #ee2a7b 50%, #6228d7 100%);
+  min-height: 100vh;
+  padding: 2rem 1rem;
+  color: #fff;
+}
+.wrap { max-width: 720px; margin: 0 auto; }
+header { text-align: center; margin-bottom: 2rem; }
+h1 {
+  font-size: clamp(2rem, 5vw, 3rem);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+.sub { color: rgba(255,255,255,0.92); margin-top: 0.5rem; }
+
+.search-row {
+  display: flex;
+  gap: 0.5rem;
+  background: white;
+  padding: 0.5rem;
+  border-radius: 14px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+}
+#keyword {
+  flex: 1;
+  padding: 0.7rem 1rem;
+  border: none;
+  font-size: 1rem;
+  color: #111;
+  border-radius: 10px;
+  background: transparent;
+}
+#keyword:focus { outline: none; }
+.btn {
+  padding: 0.7rem 1.25rem;
+  background: linear-gradient(90deg, #ee2a7b, #6228d7);
+  color: white;
+  border: none;
+  border-radius: 10px;
+  font-weight: 700;
+  cursor: pointer;
+  font-size: 0.95rem;
+}
+.btn:hover { opacity: 0.92; }
+
+.match-info {
+  text-align: center;
+  margin-top: 1rem;
+  font-size: 0.9rem;
+  color: rgba(255,255,255,0.85);
+}
+
+.results {
+  display: grid;
+  gap: 1rem;
+  margin-top: 1.5rem;
+}
+.tier {
+  background: rgba(255,255,255,0.95);
+  color: #111;
+  padding: 1.1rem 1.25rem;
+  border-radius: 14px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+}
+.tier-title {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.6rem;
+}
+.tier h3 {
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #6228d7;
+}
+.tier-copy {
+  background: #f4f4f5;
+  border: none;
+  padding: 0.3rem 0.7rem;
+  border-radius: 6px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  color: #111;
+}
+.tier-copy:hover { background: #e4e4e7; }
+.tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+.tag {
+  background: linear-gradient(90deg, #f9ce34, #ee2a7b);
+  color: white;
+  padding: 0.3rem 0.7rem;
+  border-radius: 999px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+}
+
+.banner {
+  margin-top: 2rem;
+  background: rgba(0,0,0,0.3);
+  padding: 1.25rem;
+  border-radius: 14px;
+  text-align: center;
+}
+.banner strong { display: block; font-size: 1.05rem; margin-bottom: 0.25rem; }
+.banner p { color: rgba(255,255,255,0.85); margin-bottom: 0.75rem; font-size: 0.9rem; }
+.banner-btn {
+  display: inline-block;
+  background: white;
+  color: #6228d7;
+  padding: 0.55rem 1.25rem;
+  border-radius: 10px;
+  font-weight: 700;
+  text-decoration: none;
+}

@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Text Summarizer — Paste &amp; Summarize</title>
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+<main class="wrap">
+  <h1>Text Summarizer</h1>
+  <p class="sub">Paste an article, email thread, or notes. Get a short summary in seconds.</p>
+
+  <textarea id="input" placeholder="Paste your text here..." rows="12"></textarea>
+
+  <div class="row">
+    <button id="go" class="btn primary">Summarize</button>
+    <a class="btn pay" href="https://buy.stripe.com/your-link-here" target="_blank" rel="noopener">
+      Pay $1 &amp; unlock unlimited
+    </a>
+  </div>
+
+  <section id="output" class="output hidden">
+    <h2>Summary</h2>
+    <p id="summary"></p>
+    <button id="copy" class="btn ghost">Copy</button>
+  </section>
+
+  <p class="footer">Free demo uses a mock AI. Swap in Claude or any LLM in <code>server.js</code>.</p>
+</main>
+<script src="script.js"></script>
+</body>
+</html>

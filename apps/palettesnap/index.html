@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>PaletteSnap — Extract Color Palettes from Images</title>
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+<main class="wrap">
+  <header>
+    <h1>PaletteSnap</h1>
+    <p class="sub">Drop an image. Get its 5 dominant colors as hex codes.</p>
+  </header>
+
+  <label id="dropzone" class="dropzone" for="file">
+    <span id="dz-text">Drop an image here, or click to browse</span>
+    <input id="file" type="file" accept="image/*" hidden />
+  </label>
+
+  <canvas id="canvas" class="hidden"></canvas>
+
+  <section id="palette" class="palette hidden"></section>
+
+  <div class="actions hidden" id="actions">
+    <button id="copy" class="btn primary">Copy palette</button>
+    <button id="reset" class="btn ghost">Try another image</button>
+  </div>
+
+  <a class="bmac" href="https://www.buymeacoffee.com/your-link-here" target="_blank" rel="noopener">
+    ☕ Support the creator – Buy me a coffee
+  </a>
+</main>
+<script src="app.js"></script>
+</body>
+</html>
