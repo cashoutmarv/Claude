@@ -62,3 +62,20 @@ export const XP = {
   gemColor: 0x49d6ff,
   magnetSpeed: 520,
 };
+
+// Drift mechanic — universal across mounts. The trigger is the same
+// everywhere; the *effect* varies by mount (see config/mounts.js).
+export const DRIFT = {
+  // Sample recent input no faster than every 50ms — ignores micro-jitter.
+  inputSampleMs: 50,
+  // Only consider input "real" if magnitude exceeds this. Below this, the
+  // joystick is essentially neutral.
+  inputMagnitudeMin: 0.6,
+  // How recent the "old direction" sample has to be to count as a turn.
+  inputHistoryMs: 250,
+  // Turn detection — dot product between current and recent input. Lower =
+  // sharper turn. -0.3 ≈ 107° turn.
+  turnDotMax: -0.3,
+  // Skid mark interval during drift (visual).
+  skidMs: 60,
+};
