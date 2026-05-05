@@ -1,0 +1,13 @@
+{
+  "name": "word-duel-server",
+  "version": "1.0.0",
+  "description": "Word Duel real-money skill game server",
+  "main": "game-server.js",
+  "scripts": {
+    "start": "node game-server.js",
+    "dev": "node --watch game-server.js"
+  },
+  "dependencies": {
+    "socket.io": "^4.7.5"
+  }
+}
