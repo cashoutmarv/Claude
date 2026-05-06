@@ -37,21 +37,19 @@ export const WEAPONS = {
 
 // Enemy archetypes. Stats scale with elapsed time — see WaveDirector.
 export const ENEMIES = {
-  grunt:  { hp: 18,  speed: 90,  damage: 8,  xp: 1, color: 0xc94a4a, radius: 12 },
-  runner: { hp: 12,  speed: 150, damage: 6,  xp: 1, color: 0xe07a3c, radius: 10 },
-  tank:   { hp: 80,  speed: 55,  damage: 14, xp: 4, color: 0x7a3ce0, radius: 18 },
-  boss:   { hp: 1200, speed: 70, damage: 22, xp: 40, color: 0xf2c14e, radius: 34 },
+  grunt:  { hp: 32,  speed: 105, damage: 12, xp: 1,  color: 0xc94a4a, radius: 14 },
+  runner: { hp: 20,  speed: 170, damage: 9,  xp: 1,  color: 0xe07a3c, radius: 10 },
+  tank:   { hp: 140, speed: 62,  damage: 18, xp: 4,  color: 0x7a3ce0, radius: 20 },
+  boss:   { hp: 2000, speed: 80, damage: 26, xp: 40, color: 0xf2c14e, radius: 36 },
 };
 
 export const WAVES = {
-  // Spawn cadence is interpolated by elapsed seconds.
-  initialSpawnMs: 1100,
-  minSpawnMs: 140,
-  rampSeconds: 480, // by 8min spawn rate hits floor
-  bossEverySeconds: 120,
-  // HP/dmg multiplier grows linearly with minutes survived.
-  hpScalePerMinute: 0.22,
-  damageScalePerMinute: 0.10,
+  initialSpawnMs: 800,
+  minSpawnMs: 110,
+  rampSeconds: 240,   // ramp twice as fast — peak density at 4 min not 8
+  bossEverySeconds: 90,
+  hpScalePerMinute: 0.35,
+  damageScalePerMinute: 0.18,
 };
 
 export const XP = {
@@ -63,19 +61,10 @@ export const XP = {
   magnetSpeed: 520,
 };
 
-// Drift mechanic — universal across mounts. The trigger is the same
-// everywhere; the *effect* varies by mount (see config/mounts.js).
-export const DRIFT = {
-  // Sample recent input no faster than every 50ms — ignores micro-jitter.
-  inputSampleMs: 50,
-  // Only consider input "real" if magnitude exceeds this. Below this, the
-  // joystick is essentially neutral.
-  inputMagnitudeMin: 0.6,
-  // How recent the "old direction" sample has to be to count as a turn.
-  inputHistoryMs: 250,
-  // Turn detection — dot product between current and recent input. Lower =
-  // sharper turn. -0.3 ≈ 107° turn.
-  turnDotMax: -0.3,
-  // Skid mark interval during drift (visual).
-  skidMs: 60,
+// Dash — tap the right half of the screen (or SPACE) while moving to dash
+// in your facing direction. Mount pickups (future) will enhance the effect.
+export const DASH = {
+  durationMs: 300,
+  cooldownMs: 800,
+  speedMul: 2.4,  // velocity multiplier during dash
 };

@@ -1,6 +1,5 @@
 import { ARENA, PLAYER, WEAPONS, XP } from "../config/balance.js";
 import { ECONOMY } from "../config/economy.js";
-import { MOUNTS } from "../config/mounts.js";
 import { Player } from "../entities/Player.js";
 import { Enemy } from "../entities/Enemy.js";
 import { Projectile } from "../entities/Projectile.js";
@@ -40,12 +39,8 @@ export class GameScene extends Phaser.Scene {
     VIP.applyToStats(stats);
     Subscription.applyToStats(stats);
 
-    // Resolve the active mount (the equipped "character" id is a mount id).
-    const equipped = getEquipped();
-    const mountDef = MOUNTS[equipped.character] || MOUNTS.stable_pony;
-
     // Player.
-    this.player = new Player(this, ARENA.width / 2, ARENA.height / 2, stats, mountDef);
+    this.player = new Player(this, ARENA.width / 2, ARENA.height / 2, stats);
 
     // Camera.
     this.cameras.main.startFollow(this.player.sprite, true, 0.12, 0.12);
@@ -83,7 +78,13 @@ export class GameScene extends Phaser.Scene {
     // Input.
     this.cursors = this.input.keyboard.createCursorKeys();
     this.keys = this.input.keyboard.addKeys("W,A,S,D");
+    this.dashKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
     this.joystick = new Joystick(this, { side: "left" });
+
+    // Right-half tap = dash. Joystick owns the left half.
+    this.input.on("pointerdown", (p) => {
+      if (p.x > this.scale.width / 2) this.player.startDash(this.time.now);
+    });
 
     // Physics colliders / overlaps. Use groups for performance.
     this.enemyGroup = this.physics.add.group();
@@ -352,6 +353,7 @@ export class GameScene extends Phaser.Scene {
     const j = this.joystick.getVector();
     if (j.x !== 0 || j.y !== 0) { mx = j.x; my = j.y; }
 
+    if (Phaser.Input.Keyboard.JustDown(this.dashKey)) this.player.startDash(now);
     this.player.update(dt, mx, my, now);
     this.tryFire(now);
     this.updateOrbs(dt, now);
@@ -377,39 +379,4 @@ export class GameScene extends Phaser.Scene {
     if (this.pendingLevels === 0) this.physics.resume();
   }
 
-  // Drift signature dispatcher — Player.startDrift() calls this so each
-  // mount's drift can do something different. Add a case per signature as
-  // mounts come online.
-  applyDriftSignature(cfg, x, y, _dir) {
-    switch (cfg.signature) {
-      case "pulse":
-        this.driftPulse(x, y, cfg.pulseRadius, cfg.pulseDamage);
-        break;
-      default:
-        // Unknown signature — no-op so missing data never crashes a run.
-        break;
-    }
-  }
-
-  driftPulse(x, y, radius, baseDamage) {
-    const now = this.time.now;
-    const r2 = radius * radius;
-    const dmg = baseDamage * (this.player.stats.damageMul || 1);
-    for (const e of [...this.enemies]) {
-      if (!e.alive) continue;
-      const dx = e.x - x, dy = e.y - y;
-      if (dx * dx + dy * dy < r2) {
-        const killed = e.takeDamage(dmg, now);
-        if (killed) this.killEnemy(e);
-      }
-    }
-    // Expanding ring tell — readable on small screens without being noisy.
-    const ring = this.add.circle(x, y, radius, 0x49d6ff, 0)
-      .setStrokeStyle(3, 0x49d6ff, 0.9).setDepth(8).setScale(0.15);
-    this.tweens.add({
-      targets: ring, scaleX: 1, scaleY: 1, alpha: 0,
-      duration: 320, ease: "Cubic.easeOut",
-      onComplete: () => ring.destroy(),
-    });
-  }
 }
