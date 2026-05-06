@@ -1,62 +1,18 @@
 // Item catalog. Three kinds:
-//   - characters: playable avatars with a passive stat
-//   - weapons:    starting weapons (run-time upgrade pool still applies)
-//   - relics:     equippable passives (3 slots) applied at run start
+//   - mounts:   playable creatures/vehicles (formerly "characters") with
+//               base stats AND a drift signature. Defined in mounts.js.
+//   - weapons:  starting weapons (run-time upgrade pool still applies)
+//   - relics:   equippable passives (3 slots) applied at run start
 //
 // Each item has a stable id, tier (common/uncommon/rare/epic/legendary),
 // and `apply(stats)` mutator. Stats are mutated *before the run starts*.
 
-export const CHARACTERS = {
-  adventurer: {
-    id: "adventurer",
-    name: "Adventurer",
-    tier: "common",
-    desc: "+10% XP from gems",
-    starterWeapon: "bolt",
-    apply: (s) => { s.xpMul *= 1.10; },
-    starter: true, // unlocked at account creation
-  },
-  scout: {
-    id: "scout",
-    name: "Scout",
-    tier: "uncommon",
-    desc: "+12% move speed, +1 magnet range",
-    starterWeapon: "bolt",
-    apply: (s) => { s.speedMul *= 1.12; s.pickupMul *= 1.30; },
-  },
-  duelist: {
-    id: "duelist",
-    name: "Duelist",
-    tier: "rare",
-    desc: "+15% damage, -5% max HP",
-    starterWeapon: "bolt",
-    apply: (s) => { s.damageMul *= 1.15; s.maxHp *= 0.95; },
-  },
-  warden: {
-    id: "warden",
-    name: "Warden",
-    tier: "rare",
-    desc: "+30 max HP, +0.3 HP/sec regen",
-    starterWeapon: "bolt",
-    apply: (s) => { s.maxHp += 30; s.regenPerSec += 0.3; },
-  },
-  sorcerer: {
-    id: "sorcerer",
-    name: "Sorcerer",
-    tier: "epic",
-    desc: "+1 projectile, +10% fire rate",
-    starterWeapon: "bolt",
-    apply: (s) => { s.projectiles += 1; s.fireRateMul *= 1.10; },
-  },
-  archmage: {
-    id: "archmage",
-    name: "Archmage",
-    tier: "legendary",
-    desc: "+25% damage, +1 projectile, +1 pierce",
-    starterWeapon: "bolt",
-    apply: (s) => { s.damageMul *= 1.25; s.projectiles += 1; s.pierce += 1; },
-  },
-};
+import { MOUNTS } from "./mounts.js";
+
+// "Character" is the legacy slot name; mounts ride in that slot. Existing
+// code (inventory, gacha, save state) references CHARACTERS — alias here so
+// the rename is purely surface-level for now.
+export const CHARACTERS = MOUNTS;
 
 // Weapons — for v1 only the bolt is implemented; this catalog reserves IDs
 // for future variants so the gacha pool has texture.
