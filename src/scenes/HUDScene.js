@@ -1,18 +1,17 @@
 import { UpgradeSystem } from "../systems/UpgradeSystem.js";
 import { installAchievementToast } from "../ui/AchievementToast.js";
 
-// Overlay scene: HP/XP bars, run timer, level, kills, run gold.
-// Reads state directly from GameScene each frame.
+// Overlay scene: HP/XP bars, run timer, level, kills, run gold, dash button.
 
 export class HUDScene extends Phaser.Scene {
   constructor() { super("HUDScene"); }
 
   init(data) {
-    this.game_ = data.game; // GameScene reference
+    this.game_ = data.game;
   }
 
   create() {
-    const { width } = this.scale;
+    const { width, height } = this.scale;
     const pad = 12;
     installAchievementToast(this);
 
@@ -32,7 +31,6 @@ export class HUDScene extends Phaser.Scene {
       fontFamily: "system-ui, sans-serif", fontSize: "14px", color: "#cfd2e6",
     }).setDepth(100);
 
-    // Run gold (centered).
     this.goldText = this.add.text(width / 2, pad + 32, "", {
       fontFamily: "system-ui, sans-serif", fontSize: "14px", color: "#ffd166", fontStyle: "bold",
     }).setOrigin(0.5, 0).setDepth(100);
@@ -41,12 +39,17 @@ export class HUDScene extends Phaser.Scene {
       fontFamily: "system-ui, sans-serif", fontSize: "14px", color: "#ffe28a", fontStyle: "bold",
     }).setOrigin(1, 0).setDepth(100);
 
-    // Drift indicator — sits just under LVL on the right edge.
-    this.driftText = this.add.text(width - pad, pad + 50, "DRIFT", {
-      fontFamily: "system-ui, sans-serif", fontSize: "11px", color: "#49d6ff", fontStyle: "bold",
-    }).setOrigin(1, 0).setDepth(100);
+    // Dash button — bottom-right corner. Visual only; touch handled by GameScene.
+    const dashR = 38;
+    const dashX = width - dashR - 20;
+    const dashY = height - dashR - 24;
+    this._dashR = dashR;
+    this.dashBg   = this.add.circle(dashX, dashY, dashR, 0x49d6ff, 0.12).setDepth(200);
+    this.dashRing = this.add.circle(dashX, dashY, dashR).setStrokeStyle(2.5, 0x49d6ff, 0.5).setDepth(201);
+    this.dashLabel = this.add.text(dashX, dashY, "DASH", {
+      fontFamily: "system-ui, sans-serif", fontSize: "13px", color: "#49d6ff", fontStyle: "bold",
+    }).setOrigin(0.5).setDepth(202);
 
-    // Track resize.
     this.scale.on("resize", this.onResize, this);
     this.events.once("shutdown", () => this.scale.off("resize", this.onResize, this));
   }
@@ -58,7 +61,13 @@ export class HUDScene extends Phaser.Scene {
     this.hpText.setX(size.width / 2);
     this.goldText.setX(size.width / 2);
     this.levelText.setX(size.width - pad);
-    this.driftText.setX(size.width - pad);
+
+    const dashR = this._dashR;
+    const dashX = size.width - dashR - 20;
+    const dashY = size.height - dashR - 24;
+    this.dashBg.setPosition(dashX, dashY);
+    this.dashRing.setPosition(dashX, dashY);
+    this.dashLabel.setPosition(dashX, dashY);
   }
 
   update() {
@@ -67,32 +76,34 @@ export class HUDScene extends Phaser.Scene {
     const pad = 12;
     const innerW = this.scale.width - pad * 2 - 4;
 
-    // HP.
     const p = g.player;
     const hpPct = p.stats.maxHp > 0 ? Math.max(0, p.hp / p.stats.maxHp) : 0;
     this.hpFill.width = innerW * hpPct;
     this.hpText.setText(`${Math.ceil(p.hp)} / ${p.stats.maxHp}`);
 
-    // XP.
     const xpPct = g.xpToNext > 0 ? g.xp / g.xpToNext : 0;
     this.xpFill.width = innerW * xpPct;
 
-    // Time / kills.
     const m = Math.floor(g.elapsedSec / 60);
     const s = Math.floor(g.elapsedSec % 60).toString().padStart(2, "0");
     this.statsText.setText(`${m}:${s}    Kills ${g.kills}`);
     this.goldText.setText(`+${(g.goldEarnedThisRun || 0).toLocaleString()} ◆`);
     this.levelText.setText(`LVL ${g.level}`);
 
-    // Drift indicator: bright yellow while drifting, dim grey on cooldown,
-    // cyan when ready.
+    // Dash button state: cyan = ready, gold flash = dashing, dim = cooldown.
     const now = g.time.now;
-    if (p.drifting) {
-      this.driftText.setText("DRIFT!").setColor("#ffd166");
-    } else if (now < p.driftCooldownUntil) {
-      this.driftText.setText("drift").setColor("#5a5e7a");
+    if (p.dashing) {
+      this.dashBg.setFillStyle(0xffd166, 0.30);
+      this.dashRing.setStrokeStyle(2.5, 0xffd166, 0.9);
+      this.dashLabel.setText("DASH!").setColor("#ffd166");
+    } else if (now < p.dashCooldownUntil) {
+      this.dashBg.setFillStyle(0x49d6ff, 0.04);
+      this.dashRing.setStrokeStyle(2.5, 0x49d6ff, 0.2);
+      this.dashLabel.setText("DASH").setColor("#5a5e7a");
     } else {
-      this.driftText.setText("DRIFT").setColor("#49d6ff");
+      this.dashBg.setFillStyle(0x49d6ff, 0.12);
+      this.dashRing.setStrokeStyle(2.5, 0x49d6ff, 0.5);
+      this.dashLabel.setText("DASH").setColor("#49d6ff");
     }
   }
 }
