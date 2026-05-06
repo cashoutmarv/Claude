@@ -36,7 +36,7 @@ export class InventoryScene extends Phaser.Scene {
     }).setOrigin(0.5);
 
     const charDef = lookupItem(eq.character)?.def;
-    this.add.text(width / 2, 132, `Character: ${charDef?.name || "—"}`, {
+    this.add.text(width / 2, 132, `Mount: ${charDef?.name || "—"}`, {
       fontFamily: "system-ui, sans-serif", fontSize: "16px", color: "#49d6ff", fontStyle: "bold",
     }).setOrigin(0.5);
 
@@ -48,7 +48,7 @@ export class InventoryScene extends Phaser.Scene {
 
     // Owned characters.
     let y = 190;
-    this.add.text(20, y, "CHARACTERS", {
+    this.add.text(20, y, "MOUNTS", {
       fontFamily: "system-ui, sans-serif", fontSize: "12px", color: "#7a8099", fontStyle: "bold",
     });
     y += 22;

@@ -5,7 +5,7 @@
 // Preferences plugin without touching callers.
 
 const KEY = "dungeondrift.save.v2";
-const VERSION = 2;
+const VERSION = 3;
 
 // Default save shape. Adding a new field here = automatic migration: any
 // missing key is filled in on load.
@@ -38,13 +38,16 @@ const DEFAULTS = () => ({
   // Inventory.
   inventory: {
     // ownedCharacters[id] = { level, shards }
-    ownedCharacters: { adventurer: { level: 1, shards: 0 } },
+    // (the slot is still called "character" in storage; the items in it are
+    // mounts — see config/mounts.js. Renaming the storage key is deferred so
+    // existing dev saves don't get blown away.)
+    ownedCharacters: { stable_pony: { level: 1, shards: 0 } },
     ownedRelics: {},
     ownedWeapons: { bolt: { level: 1, shards: 0 } },
   },
   // Equipped state.
   equipped: {
-    character: "adventurer",
+    character: "stable_pony",
     relics: [null, null, null],
   },
   // Gacha pity counters per banner.
@@ -75,6 +78,26 @@ function deepMerge(into, from) {
   return into;
 }
 
+// In-place save migrations. Runs before deepMerge so default values can fill
+// in any newly-introduced fields automatically.
+function migrate(saved) {
+  if (!saved || typeof saved !== "object") return saved;
+  const v = saved.version || 1;
+  if (v < 3) {
+    // v2 → v3: starter character "adventurer" was renamed to "stable_pony"
+    // when the character slot was reframed as the mount slot.
+    const inv = saved.inventory;
+    if (inv && inv.ownedCharacters && inv.ownedCharacters.adventurer && !inv.ownedCharacters.stable_pony) {
+      inv.ownedCharacters.stable_pony = inv.ownedCharacters.adventurer;
+      delete inv.ownedCharacters.adventurer;
+    }
+    if (saved.equipped && saved.equipped.character === "adventurer") {
+      saved.equipped.character = "stable_pony";
+    }
+  }
+  return saved;
+}
+
 let cache = null;
 
 export const Storage = {
@@ -87,7 +110,10 @@ export const Storage = {
       try { saved = JSON.parse(raw); } catch { saved = null; }
     }
     const data = DEFAULTS();
-    if (saved) deepMerge(data, saved);
+    if (saved) {
+      migrate(saved);
+      deepMerge(data, saved);
+    }
     data.version = VERSION;
     cache = data;
     return cache;

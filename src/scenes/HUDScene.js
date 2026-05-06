@@ -41,6 +41,11 @@ export class HUDScene extends Phaser.Scene {
       fontFamily: "system-ui, sans-serif", fontSize: "14px", color: "#ffe28a", fontStyle: "bold",
     }).setOrigin(1, 0).setDepth(100);
 
+    // Drift indicator — sits just under LVL on the right edge.
+    this.driftText = this.add.text(width - pad, pad + 50, "DRIFT", {
+      fontFamily: "system-ui, sans-serif", fontSize: "11px", color: "#49d6ff", fontStyle: "bold",
+    }).setOrigin(1, 0).setDepth(100);
+
     // Track resize.
     this.scale.on("resize", this.onResize, this);
     this.events.once("shutdown", () => this.scale.off("resize", this.onResize, this));
@@ -53,6 +58,7 @@ export class HUDScene extends Phaser.Scene {
     this.hpText.setX(size.width / 2);
     this.goldText.setX(size.width / 2);
     this.levelText.setX(size.width - pad);
+    this.driftText.setX(size.width - pad);
   }
 
   update() {
@@ -77,5 +83,16 @@ export class HUDScene extends Phaser.Scene {
     this.statsText.setText(`${m}:${s}    Kills ${g.kills}`);
     this.goldText.setText(`+${(g.goldEarnedThisRun || 0).toLocaleString()} ◆`);
     this.levelText.setText(`LVL ${g.level}`);
+
+    // Drift indicator: bright yellow while drifting, dim grey on cooldown,
+    // cyan when ready.
+    const now = g.time.now;
+    if (p.drifting) {
+      this.driftText.setText("DRIFT!").setColor("#ffd166");
+    } else if (now < p.driftCooldownUntil) {
+      this.driftText.setText("drift").setColor("#5a5e7a");
+    } else {
+      this.driftText.setText("DRIFT").setColor("#49d6ff");
+    }
   }
 }
