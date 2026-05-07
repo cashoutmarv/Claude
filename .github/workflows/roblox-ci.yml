@@ -1,0 +1,45 @@
+name: Roblox CI
+
+on:
+  pull_request:
+    paths:
+      - 'roblox/escape-the-multiverse/**'
+      - '.github/workflows/roblox-ci.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'roblox/escape-the-multiverse/**'
+      - '.github/workflows/roblox-ci.yml'
+  workflow_dispatch:
+
+jobs:
+  lint-and-test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: roblox/escape-the-multiverse
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Aftman (rojo, selene, stylua, wally)
+        uses: ok-nick/setup-aftman@v0.4.2
+        with:
+          version: v0.3.0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Wally install
+        run: wally install
+
+      - name: Install Lune
+        uses: lumin-org/setup-lune@v0.3.0
+        with:
+          version: 0.8.9
+
+      - name: Selene
+        run: selene src/ tests/
+
+      - name: StyLua check
+        run: stylua --check src/ tests/
+
+      - name: Pure-logic specs (lune)
+        run: lune run tests/runner.lua

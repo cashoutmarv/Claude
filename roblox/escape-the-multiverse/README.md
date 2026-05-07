@@ -37,6 +37,13 @@ Pure-logic specs in `tests/` run via TestEZ in Studio or
 lune run tests/run.lua
 ```
 
+## CI
+
+`.github/workflows/roblox-ci.yml` runs on every PR/push that touches files
+under `roblox/escape-the-multiverse/`. It installs Aftman + Wally, then
+runs `selene`, `stylua --check`, and the pure-logic specs via `lune run
+tests/runner.lua`. Phaser-only changes do not trigger this workflow.
+
 ## Layout
 
 See `docs/architecture.md` for the system map, or the plan file at
