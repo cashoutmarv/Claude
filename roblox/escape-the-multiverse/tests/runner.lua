@@ -1,6 +1,7 @@
 -- Pure-logic test runner for lune. Runs the TestEZ specs in tests/ by:
---   1. Stubbing Roblox globals on _G (Color3, Vector3, CFrame, etc.) so config
---      files that reference them at module load do not crash.
+--   1. Building a `stubs` table of Roblox globals (Color3, Vector3, CFrame,
+--      Enum, Instance, game, …) so config files that reference them at
+--      module load do not crash.
 --   2. Loading every required module via a shimmed `require` that recognizes
 --      ModuleScript proxies (Roblox shape) and reads the corresponding file.
 --      Each loaded module gets its own `script` upvalue whose `script.Parent`
@@ -8,22 +9,32 @@
 --      resolve.
 --   3. Implementing a minimal TestEZ DSL (describe / it / expect.to.equal /
 --      expect.never.to.equal). Exits non-zero on any failure so CI fails.
+--
+-- Why we don't put stubs on `_G`: in Luau (and therefore Lune) the globals
+-- visible to a chunk loaded via `luau.load({ environment = env })` come from
+-- `env` directly, NOT via metatable lookup to `_G`. Lune's `injectGlobals`
+-- copies the standard library (`print`, `string`, `math`, …) into `env`, but
+-- entries we set on `_G` do not propagate. So we keep stubs in our own
+-- `stubs` table and copy them into every chunk env we build.
 
 local fs = require("@lune/fs")
 local process = require("@lune/process")
+local luau = require("@lune/luau")
 
--- Capture lune's native require *before* we overwrite the global so that
--- any pass-through to "@lune/<x>" or other lune paths still works.
+-- Capture lune's native require *before* anything else so pass-through to
+-- "@lune/<x>" still works inside our patched require.
 local lune_require = require
 
--- ─── Roblox global stubs (visible to every loaded module) ─────────────────
+-- ─── Roblox global stubs ──────────────────────────────────────────────────
+
+local stubs = {}
 
 local function tagged(t, name)
 	t.__t = name
 	return t
 end
 
-_G.Color3 = {
+stubs.Color3 = {
 	fromRGB = function(r, g, b)
 		return tagged({ R = r or 0, G = g or 0, B = b or 0 }, "Color3")
 	end,
@@ -32,14 +43,14 @@ _G.Color3 = {
 	end,
 }
 
-_G.Vector3 = {
+stubs.Vector3 = {
 	new = function(x, y, z)
 		return tagged({ X = x or 0, Y = y or 0, Z = z or 0 }, "Vector3")
 	end,
 	zero = tagged({ X = 0, Y = 0, Z = 0 }, "Vector3"),
 }
 
-_G.CFrame = setmetatable({
+stubs.CFrame = setmetatable({
 	new = function(...)
 		return tagged({ args = { ... } }, "CFrame")
 	end,
@@ -52,27 +63,27 @@ _G.CFrame = setmetatable({
 	end,
 })
 
-_G.ColorSequence = {
+stubs.ColorSequence = {
 	new = function(...)
 		return tagged({ args = { ... } }, "ColorSequence")
 	end,
 }
-_G.ColorSequenceKeypoint = {
+stubs.ColorSequenceKeypoint = {
 	new = function(t, c)
 		return tagged({ Time = t, Value = c }, "ColorSequenceKeypoint")
 	end,
 }
-_G.NumberRange = {
+stubs.NumberRange = {
 	new = function(min, max)
 		return tagged({ Min = min, Max = max or min }, "NumberRange")
 	end,
 }
-_G.UDim = {
+stubs.UDim = {
 	new = function(s, o)
 		return tagged({ Scale = s, Offset = o }, "UDim")
 	end,
 }
-_G.UDim2 = {
+stubs.UDim2 = {
 	new = function(...)
 		return tagged({ args = { ... } }, "UDim2")
 	end,
@@ -83,7 +94,7 @@ _G.UDim2 = {
 		return tagged({ X = x, Y = y }, "UDim2")
 	end,
 }
-_G.Random = {
+stubs.Random = {
 	new = function(seed)
 		local rng = { seed = seed or 0 }
 		function rng:NextNumber(a, b)
@@ -97,7 +108,7 @@ _G.Random = {
 		return rng
 	end,
 }
-_G.Enum = setmetatable({}, {
+stubs.Enum = setmetatable({}, {
 	__index = function(_, k)
 		return setmetatable({}, {
 			__index = function(_, k2)
@@ -106,19 +117,43 @@ _G.Enum = setmetatable({}, {
 		})
 	end,
 })
-_G.Instance = {
+stubs.Instance = {
 	new = function(className, parent)
 		return tagged({ ClassName = className, Children = {}, Parent = parent }, "Instance")
 	end,
 }
--- typeof falls back to type if absent (lune defines it for Roblox-shaped values).
-if rawget(_G, "typeof") == nil then
-	_G.typeof = type
+stubs.typeof = type
+
+-- ─── Pre-built filesystem tree ────────────────────────────────────────────
+-- We cannot call fs.isFile / fs.isDir from inside a __index metamethod, because
+-- the spec functions are run via pcall (TestEZ-style) and Lune's fs functions
+-- yield internally → "attempt to yield across metamethod/C-call boundary".
+-- Instead, we walk src/ once at startup and store a directory tree in memory.
+
+local function buildTree(root)
+	local node = { kind = "dir", path = root, children = {} }
+	if not fs.isDir(root) then
+		return nil
+	end
+	for _, entry in ipairs(fs.readDir(root)) do
+		local sub = root .. "/" .. entry
+		if fs.isDir(sub) then
+			node.children[entry] = buildTree(sub)
+		elseif fs.isFile(sub) then
+			node.children[entry] = { kind = "file", path = sub }
+		end
+	end
+	return node
 end
+
+local roots = {
+	["src/shared"] = buildTree("src/shared"),
+	["src/server"] = buildTree("src/server"),
+	["src/client"] = buildTree("src/client"),
+}
 
 -- ─── Module loader (Roblox path → filesystem) ─────────────────────────────
 
--- Each module is loaded once and cached by its filesystem path.
 local cache = {}
 
 -- Forward declarations.
@@ -127,8 +162,45 @@ local makeScript
 local readModule
 local patched_require
 
+-- Compile a chunk via @lune/luau. Lune doesn't expose standard `load`, and
+-- env entries are NOT looked up through metatables — they must be present
+-- on the env table itself.
+local function compileChunk(source, chunkname, env)
+	local ok, fnOrErr = pcall(luau.load, source, {
+		debugName = chunkname,
+		environment = env,
+	})
+	if not ok then
+		return nil, tostring(fnOrErr)
+	end
+	return fnOrErr, nil
+end
+
+-- Find a tree node for a filesystem path, walking from the root.
+local function findNode(fsPath)
+	for rootPath, root in pairs(roots) do
+		if fsPath == rootPath then
+			return root
+		end
+		local rest = fsPath:match("^" .. rootPath:gsub("([%.%-%+%(%)%[%]%^%$%?%*])", "%%%1") .. "/(.+)$")
+		if rest and root then
+			local node = root
+			for part in rest:gmatch("[^/]+") do
+				if not node or node.kind ~= "dir" then
+					return nil
+				end
+				node = node.children[part]
+			end
+			return node
+		end
+	end
+	return nil
+end
+
 -- A folder proxy: indexing returns either a child folder or a ModuleScript proxy.
+-- All resolution comes from the pre-built `roots` tree → no fs calls in metamethods.
 function makeFolder(fsPath)
+	local node = findNode(fsPath)
 	return setmetatable({ __t = "Folder", _fs = fsPath }, {
 		__index = function(_, key)
 			if key == "Parent" then
@@ -138,10 +210,13 @@ function makeFolder(fsPath)
 				end
 				return nil
 			end
-			local subFile = fsPath .. "/" .. key .. ".lua"
-			local subDir = fsPath .. "/" .. key
-			if fs.isFile(subFile) then
-				return setmetatable({ __t = "ModuleScript", _fs = subFile }, {
+			if not node or node.kind ~= "dir" then
+				return nil
+			end
+			local fileChild = node.children[key .. ".lua"]
+			if fileChild and fileChild.kind == "file" then
+				local childPath = fileChild.path
+				return setmetatable({ __t = "ModuleScript", _fs = childPath }, {
 					__index = function(_, kk)
 						if kk == "Parent" then
 							return makeFolder(fsPath)
@@ -149,8 +224,10 @@ function makeFolder(fsPath)
 						return nil
 					end,
 				})
-			elseif fs.isDir(subDir) then
-				return makeFolder(subDir)
+			end
+			local dirChild = node.children[key]
+			if dirChild and dirChild.kind == "dir" then
+				return makeFolder(dirChild.path)
 			end
 			return nil
 		end,
@@ -168,40 +245,6 @@ function makeScript(fsPath)
 			return nil
 		end,
 	})
-end
-
--- Read + execute a module file once, returning whatever it `return`s.
-function readModule(fsPath)
-	if cache[fsPath] ~= nil then
-		return cache[fsPath]
-	end
-	if not fs.isFile(fsPath) then
-		error("missing module file: " .. fsPath)
-	end
-	local source = fs.readFile(fsPath)
-	-- Per-chunk environment: inherits _G for Roblox stubs, plus its own
-	-- `script` and the patched `require`. `game` is also exposed because
-	-- some modules use `require(game:GetService(...).Shared.X)`.
-	local env = setmetatable({
-		script = makeScript(fsPath),
-		require = patched_require,
-	}, { __index = _G })
-	local chunk, err = load(source, "@" .. fsPath, "t", env)
-	if not chunk then
-		error("compile " .. fsPath .. ": " .. tostring(err))
-	end
-	local result = chunk()
-	cache[fsPath] = result
-	return result
-end
-
--- The require shim. ModuleScript proxies → file load. Lune-style strings →
--- pass-through to lune's native require.
-function patched_require(arg)
-	if type(arg) == "table" and arg.__t == "ModuleScript" then
-		return readModule(arg._fs)
-	end
-	return lune_require(arg)
 end
 
 -- ─── game proxy (for `game:GetService("ReplicatedStorage").Shared.X`) ─────
@@ -246,7 +289,7 @@ local function makeService(name)
 	return setmetatable({}, {})
 end
 
-_G.game = setmetatable({
+stubs.game = setmetatable({
 	GetService = function(_, name)
 		return makeService(name)
 	end,
@@ -256,10 +299,47 @@ _G.game = setmetatable({
 	end,
 })
 
--- Expose the patched require globally too so any chunk that does NOT receive
--- our custom env (for example loaded with bare `load(source)`) can still
--- resolve ModuleScript proxies.
-_G.require = patched_require
+-- Build a fresh chunk env: every stub key copied in directly, plus per-chunk
+-- `script` and `require`. We do NOT use metatable __index to a stubs table
+-- because Luau's global resolution for chunks loaded with `luau.load` looks
+-- only at direct keys on the env.
+local function makeChunkEnv(fsPath)
+	local env = {}
+	for k, v in pairs(stubs) do
+		env[k] = v
+	end
+	env.script = makeScript(fsPath)
+	env.require = patched_require
+	return env
+end
+
+-- Read + execute a module file once, returning whatever it `return`s.
+function readModule(fsPath)
+	if cache[fsPath] ~= nil then
+		return cache[fsPath]
+	end
+	if not fs.isFile(fsPath) then
+		error("missing module file: " .. fsPath)
+	end
+	local source = fs.readFile(fsPath)
+	local env = makeChunkEnv(fsPath)
+	local chunk, err = compileChunk(source, "@" .. fsPath, env)
+	if not chunk then
+		error("compile " .. fsPath .. ": " .. tostring(err))
+	end
+	local result = chunk()
+	cache[fsPath] = result
+	return result
+end
+
+-- The require shim. ModuleScript proxies → file load. Lune-style strings →
+-- pass-through to lune's native require.
+function patched_require(arg)
+	if type(arg) == "table" and arg.__t == "ModuleScript" then
+		return readModule(arg._fs)
+	end
+	return lune_require(arg)
+end
 
 -- ─── Minimal TestEZ DSL ───────────────────────────────────────────────────
 
@@ -301,11 +381,14 @@ local function makeMatcher(value, negated)
 			error(("expected %s, got %s"):format(tostring(other), tostring(value)), 3)
 		end
 	end
+	-- TestEZ specs call matchers with dot syntax: `expect(x).to.equal(y)`.
+	-- That means `equal` is invoked with a single positional arg (no `self`),
+	-- so we must NOT use a colon-style first parameter when wiring it up.
 	local toTbl
 	toTbl = setmetatable({}, {
 		__index = function(_, k)
 			if k == "equal" then
-				return function(_, other)
+				return function(other)
 					check(other)
 				end
 			elseif k == "be" then
@@ -334,9 +417,9 @@ local function expect(value)
 	return makeMatcher(value, false)
 end
 
-_G.describe = describe
-_G.it = it
-_G.expect = expect
+stubs.describe = describe
+stubs.it = it
+stubs.expect = expect
 
 -- ─── Run specs ────────────────────────────────────────────────────────────
 
@@ -358,11 +441,8 @@ for _, specPath in ipairs(SPECS) do
 	else
 		print("\n[" .. specPath .. "]")
 		local source = fs.readFile(specPath)
-		local env = setmetatable({
-			script = makeScript(specPath),
-			require = patched_require,
-		}, { __index = _G })
-		local chunk, err = load(source, "@" .. specPath, "t", env)
+		local env = makeChunkEnv(specPath)
+		local chunk, err = compileChunk(source, "@" .. specPath, env)
 		if not chunk then
 			print("compile error: " .. tostring(err))
 			report.failed = report.failed + 1

@@ -10,7 +10,11 @@ function Difficulty.globalStage(world: number, stage: number): number
 end
 
 function Difficulty.jumpDistance(world: number, stage: number): number
-	return 8 + 0.6 * (world - 1) + 0.15 * stage
+	-- Parameterized by globalStage so the curve is non-decreasing across
+	-- world boundaries (no reset between W{N}_S20 → W{N+1}_S01) and lands
+	-- W1S1 ≤ 8.5 / W10S20 ≥ 22 — both asserted by Difficulty.spec.
+	local g = Difficulty.globalStage(world, stage)
+	return 8 + 0.075 * (g - 1)
 end
 
 function Difficulty.platformWidth(world: number, stage: number): number
