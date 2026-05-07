@@ -18,21 +18,38 @@ jobs:
     defaults:
       run:
         working-directory: roblox/escape-the-multiverse
+    env:
+      SELENE_VERSION: 0.27.1
+      STYLUA_VERSION: 0.20.0
+      LUNE_VERSION: 0.8.9
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install Aftman (rojo, selene, stylua, wally)
-        uses: ok-nick/setup-aftman@v0.4.2
-        with:
-          version: v0.3.0
-          token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Install Selene
+        working-directory: ${{ github.workspace }}
+        run: |
+          set -euo pipefail
+          cd "$RUNNER_TEMP"
+          curl -fsSL -o selene.zip \
+            "https://github.com/Kampfkarren/selene/releases/download/${SELENE_VERSION}/selene-${SELENE_VERSION}-linux.zip"
+          unzip -q selene.zip
+          chmod +x selene
+          sudo mv selene /usr/local/bin/selene
+          selene --version
 
-      - name: Wally install
-        run: wally install
+      - name: Install StyLua
+        working-directory: ${{ github.workspace }}
+        run: |
+          set -euo pipefail
+          cd "$RUNNER_TEMP"
+          curl -fsSL -o stylua.zip \
+            "https://github.com/JohnnyMorganz/StyLua/releases/download/v${STYLUA_VERSION}/stylua-linux-x86_64.zip"
+          unzip -q stylua.zip
+          chmod +x stylua
+          sudo mv stylua /usr/local/bin/stylua
+          stylua --version
 
       - name: Install Lune
-        env:
-          LUNE_VERSION: 0.8.9
         working-directory: ${{ github.workspace }}
         run: |
           set -euo pipefail
