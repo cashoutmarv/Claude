@@ -31,9 +31,18 @@ jobs:
         run: wally install
 
       - name: Install Lune
-        uses: lumin-org/setup-lune@v0.3.0
-        with:
-          version: 0.8.9
+        env:
+          LUNE_VERSION: 0.8.9
+        working-directory: ${{ github.workspace }}
+        run: |
+          set -euo pipefail
+          cd "$RUNNER_TEMP"
+          curl -fsSL -o lune.zip \
+            "https://github.com/lune-org/lune/releases/download/v${LUNE_VERSION}/lune-${LUNE_VERSION}-linux-x86_64.zip"
+          unzip -q lune.zip
+          chmod +x lune
+          sudo mv lune /usr/local/bin/lune
+          lune --version
 
       - name: Selene
         run: selene src/ tests/
