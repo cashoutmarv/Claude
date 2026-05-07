@@ -1,25 +1,29 @@
 -- Pure-logic test runner for lune. Runs the TestEZ specs in tests/ by:
---   1. Stubbing Roblox globals that config files reference at load time
---      (Color3, Vector3, CFrame, ColorSequence, NumberRange, UDim, UDim2,
---      Instance, Random, Enum, etc.). These stubs return inert tagged
---      tables — sufficient for our config files which only call constructors.
---   2. Providing `game:GetService("ReplicatedStorage").Shared.<path>` proxy
---      that resolves to ModuleScript proxies; the patched `require` reads
---      those from the filesystem under src/shared/.
---   3. Implementing a minimal TestEZ DSL (describe / it / expect.to.equal).
--- Exits non-zero on any failure so CI fails.
+--   1. Stubbing Roblox globals on _G (Color3, Vector3, CFrame, etc.) so config
+--      files that reference them at module load do not crash.
+--   2. Loading every required module via a shimmed `require` that recognizes
+--      ModuleScript proxies (Roblox shape) and reads the corresponding file.
+--      Each loaded module gets its own `script` upvalue whose `script.Parent`
+--      walks the filesystem tree, so Roblox `script.Parent.X` style requires
+--      resolve.
+--   3. Implementing a minimal TestEZ DSL (describe / it / expect.to.equal /
+--      expect.never.to.equal). Exits non-zero on any failure so CI fails.
 
 local fs = require("@lune/fs")
 local process = require("@lune/process")
 
--- ─── Roblox stubs ─────────────────────────────────────────────────────────
+-- Capture lune's native require *before* we overwrite the global so that
+-- any pass-through to "@lune/<x>" or other lune paths still works.
+local lune_require = require
+
+-- ─── Roblox global stubs (visible to every loaded module) ─────────────────
 
 local function tagged(t, name)
 	t.__t = name
 	return t
 end
 
-Color3 = {
+_G.Color3 = {
 	fromRGB = function(r, g, b)
 		return tagged({ R = r or 0, G = g or 0, B = b or 0 }, "Color3")
 	end,
@@ -28,14 +32,14 @@ Color3 = {
 	end,
 }
 
-Vector3 = {
+_G.Vector3 = {
 	new = function(x, y, z)
 		return tagged({ X = x or 0, Y = y or 0, Z = z or 0 }, "Vector3")
 	end,
 	zero = tagged({ X = 0, Y = 0, Z = 0 }, "Vector3"),
 }
 
-CFrame = setmetatable({
+_G.CFrame = setmetatable({
 	new = function(...)
 		return tagged({ args = { ... } }, "CFrame")
 	end,
@@ -48,35 +52,44 @@ CFrame = setmetatable({
 	end,
 })
 
-ColorSequence = {
+_G.ColorSequence = {
 	new = function(...)
 		return tagged({ args = { ... } }, "ColorSequence")
 	end,
 }
-ColorSequenceKeypoint = {
+_G.ColorSequenceKeypoint = {
 	new = function(t, c)
 		return tagged({ Time = t, Value = c }, "ColorSequenceKeypoint")
 	end,
 }
-NumberRange = {
+_G.NumberRange = {
 	new = function(min, max)
 		return tagged({ Min = min, Max = max or min }, "NumberRange")
 	end,
 }
-UDim = { new = function(s, o) return tagged({ Scale = s, Offset = o }, "UDim") end }
-UDim2 = {
-	new = function(...) return tagged({ args = { ... } }, "UDim2") end,
-	fromOffset = function(x, y) return tagged({ X = x, Y = y }, "UDim2") end,
-	fromScale = function(x, y) return tagged({ X = x, Y = y }, "UDim2") end,
+_G.UDim = {
+	new = function(s, o)
+		return tagged({ Scale = s, Offset = o }, "UDim")
+	end,
 }
-
-Random = {
+_G.UDim2 = {
+	new = function(...)
+		return tagged({ args = { ... } }, "UDim2")
+	end,
+	fromOffset = function(x, y)
+		return tagged({ X = x, Y = y }, "UDim2")
+	end,
+	fromScale = function(x, y)
+		return tagged({ X = x, Y = y }, "UDim2")
+	end,
+}
+_G.Random = {
 	new = function(seed)
 		local rng = { seed = seed or 0 }
 		function rng:NextNumber(a, b)
 			a = a or 0
 			b = b or 1
-			return a + (b - a) * 0.5 -- deterministic stub
+			return a + (b - a) * 0.5
 		end
 		function rng:NextInteger(a, b)
 			return math.floor((a + b) / 2)
@@ -84,8 +97,7 @@ Random = {
 		return rng
 	end,
 }
-
-Enum = setmetatable({}, {
+_G.Enum = setmetatable({}, {
 	__index = function(_, k)
 		return setmetatable({}, {
 			__index = function(_, k2)
@@ -94,28 +106,72 @@ Enum = setmetatable({}, {
 		})
 	end,
 })
-
-Instance = {
+_G.Instance = {
 	new = function(className, parent)
-		local inst = tagged({ ClassName = className, Children = {}, Parent = parent }, "Instance")
-		return inst
+		return tagged({ ClassName = className, Children = {}, Parent = parent }, "Instance")
 	end,
 }
-
--- task.* functions some modules touch on load
-task = task or {}
-task.spawn = task.spawn or function(fn, ...) end
-task.delay = task.delay or function(_, fn, ...) end
-task.wait = task.wait or function() end
-task.cancel = task.cancel or function() end
-typeof = typeof or function(v) return type(v) end
+-- typeof falls back to type if absent (lune defines it for Roblox-shaped values).
+if rawget(_G, "typeof") == nil then
+	_G.typeof = type
+end
 
 -- ─── Module loader (Roblox path → filesystem) ─────────────────────────────
 
-local SRC_SHARED = "src/shared"
+-- Each module is loaded once and cached by its filesystem path.
 local cache = {}
 
-local function readModule(fsPath)
+-- Forward declarations.
+local makeFolder
+local makeScript
+local readModule
+local patched_require
+
+-- A folder proxy: indexing returns either a child folder or a ModuleScript proxy.
+function makeFolder(fsPath)
+	return setmetatable({ __t = "Folder", _fs = fsPath }, {
+		__index = function(_, key)
+			if key == "Parent" then
+				local parent = fsPath:match("^(.*)/[^/]+$")
+				if parent and parent ~= "" then
+					return makeFolder(parent)
+				end
+				return nil
+			end
+			local subFile = fsPath .. "/" .. key .. ".lua"
+			local subDir = fsPath .. "/" .. key
+			if fs.isFile(subFile) then
+				return setmetatable({ __t = "ModuleScript", _fs = subFile }, {
+					__index = function(_, kk)
+						if kk == "Parent" then
+							return makeFolder(fsPath)
+						end
+						return nil
+					end,
+				})
+			elseif fs.isDir(subDir) then
+				return makeFolder(subDir)
+			end
+			return nil
+		end,
+	})
+end
+
+-- A `script` upvalue for a module file. `script.Parent` is its containing folder.
+function makeScript(fsPath)
+	local parentDir = fsPath:match("^(.*)/[^/]+%.lua$") or "."
+	return setmetatable({ __t = "ModuleScript", _fs = fsPath }, {
+		__index = function(_, k)
+			if k == "Parent" then
+				return makeFolder(parentDir)
+			end
+			return nil
+		end,
+	})
+end
+
+-- Read + execute a module file once, returning whatever it `return`s.
+function readModule(fsPath)
 	if cache[fsPath] ~= nil then
 		return cache[fsPath]
 	end
@@ -123,7 +179,14 @@ local function readModule(fsPath)
 		error("missing module file: " .. fsPath)
 	end
 	local source = fs.readFile(fsPath)
-	local chunk, err = load(source, "@" .. fsPath)
+	-- Per-chunk environment: inherits _G for Roblox stubs, plus its own
+	-- `script` and the patched `require`. `game` is also exposed because
+	-- some modules use `require(game:GetService(...).Shared.X)`.
+	local env = setmetatable({
+		script = makeScript(fsPath),
+		require = patched_require,
+	}, { __index = _G })
+	local chunk, err = load(source, "@" .. fsPath, "t", env)
 	if not chunk then
 		error("compile " .. fsPath .. ": " .. tostring(err))
 	end
@@ -132,72 +195,79 @@ local function readModule(fsPath)
 	return result
 end
 
--- Folder proxy: __index resolves child files/dirs lazily.
-local function makeFolder(fsPath)
-	return setmetatable({ __t = "Folder", _fs = fsPath }, {
-		__index = function(_, key)
-			local subFile = fsPath .. "/" .. key .. ".lua"
-			local subDir = fsPath .. "/" .. key
-			if fs.isFile(subFile) then
-				-- ModuleScript proxy that the patched require unwraps.
-				return setmetatable({ __t = "ModuleScript", _fs = subFile }, {})
-			elseif fs.isDir(subDir) then
-				return makeFolder(subDir)
-			else
-				return nil
-			end
-		end,
-	})
+-- The require shim. ModuleScript proxies → file load. Lune-style strings →
+-- pass-through to lune's native require.
+function patched_require(arg)
+	if type(arg) == "table" and arg.__t == "ModuleScript" then
+		return readModule(arg._fs)
+	end
+	return lune_require(arg)
 end
 
-local sharedRoot = makeFolder(SRC_SHARED)
-local Folder_ETM_Net = makeFolder(SRC_SHARED) -- cheap dummy; not used in pure specs
+-- ─── game proxy (for `game:GetService("ReplicatedStorage").Shared.X`) ─────
+
+local sharedRoot = makeFolder("src/shared")
+local etmNetRoot = makeFolder("src/shared") -- harmless placeholder
 
 local function makeService(name)
 	if name == "ReplicatedStorage" then
-		return setmetatable({ Shared = sharedRoot }, {
+		return setmetatable({}, {
 			__index = function(_, k)
 				if k == "Shared" then
 					return sharedRoot
 				elseif k == "ETM_Net" then
-					return Folder_ETM_Net
+					return etmNetRoot
 				end
 				return nil
 			end,
 		})
 	elseif name == "RunService" then
-		return { IsServer = function() return true end, IsClient = function() return false end, IsStudio = function() return false end }
+		return {
+			IsServer = function()
+				return true
+			end,
+			IsClient = function()
+				return false
+			end,
+			IsStudio = function()
+				return false
+			end,
+		}
+	elseif name == "ServerScriptService" then
+		return setmetatable({}, {
+			__index = function(_, k)
+				if k == "Server" then
+					return makeFolder("src/server")
+				end
+				return nil
+			end,
+		})
 	end
 	return setmetatable({}, {})
 end
 
-game = setmetatable({
-	GetService = function(_, name) return makeService(name) end,
+_G.game = setmetatable({
+	GetService = function(_, name)
+		return makeService(name)
+	end,
 }, {
 	__index = function(_, k)
 		return makeService(k)
 	end,
 })
 
--- Patch require: if the argument is a ModuleScript proxy, read from filesystem;
--- otherwise delegate to lune's native require.
-local nativeRequire = require
-require = function(arg)
-	if type(arg) == "table" and arg.__t == "ModuleScript" then
-		return readModule(arg._fs)
-	end
-	return nativeRequire(arg)
-end
+-- Expose the patched require globally too so any chunk that does NOT receive
+-- our custom env (for example loaded with bare `load(source)`) can still
+-- resolve ModuleScript proxies.
+_G.require = patched_require
 
 -- ─── Minimal TestEZ DSL ───────────────────────────────────────────────────
 
-local report = { suites = {}, passed = 0, failed = 0, currentSuite = nil }
+local report = { passed = 0, failed = 0, currentSuite = nil }
 
 local function describe(name, fn)
 	local prev = report.currentSuite
-	local suite = { name = name, parent = prev, tests = {} }
-	report.currentSuite = suite
-	table.insert(report.suites, suite)
+	report.currentSuite = { name = name, parent = prev }
 	local ok, err = pcall(fn)
 	if not ok then
 		print("[describe error] " .. name .. ": " .. tostring(err))
@@ -219,37 +289,49 @@ local function it(name, fn)
 	end
 end
 
-local function expect(value)
-	local matchers = {}
-	matchers.to = matchers
-	matchers.equal = function(self, other)
-		if value ~= other then
-			error(("expected %s, got %s"):format(tostring(other), tostring(value)), 2)
+local function makeMatcher(value, negated)
+	local function check(other)
+		local equal = value == other
+		if negated and equal then
+			error(
+				("expected NOT %s, got %s"):format(tostring(other), tostring(value)),
+				3
+			)
+		elseif not negated and not equal then
+			error(("expected %s, got %s"):format(tostring(other), tostring(value)), 3)
 		end
-		return matchers
 	end
-	matchers.never = matchers
-	matchers.be = matchers
-	-- chained API; allow `expect(x).to.equal(y)`
-	return setmetatable({}, {
+	local toTbl
+	toTbl = setmetatable({}, {
 		__index = function(_, k)
-			if k == "to" or k == "be" or k == "never" then
-				return setmetatable({}, {
-					__index = function(_, k2)
-						if k2 == "equal" then
-							return function(_, other)
-								if value ~= other then
-									error(("expected %s, got %s"):format(tostring(other), tostring(value)), 2)
-								end
-							end
-						end
-						return nil
-					end,
-				})
+			if k == "equal" then
+				return function(_, other)
+					check(other)
+				end
+			elseif k == "be" then
+				return toTbl
+			elseif k == "never" then
+				return makeMatcher(value, not negated)
 			end
 			return nil
 		end,
 	})
+	return setmetatable({}, {
+		__index = function(_, k)
+			if k == "to" then
+				return toTbl
+			elseif k == "never" then
+				return makeMatcher(value, not negated)
+			elseif k == "be" then
+				return toTbl
+			end
+			return nil
+		end,
+	})
+end
+
+local function expect(value)
+	return makeMatcher(value, false)
 end
 
 _G.describe = describe
@@ -276,18 +358,28 @@ for _, specPath in ipairs(SPECS) do
 	else
 		print("\n[" .. specPath .. "]")
 		local source = fs.readFile(specPath)
-		local chunk, err = load(source, "@" .. specPath)
+		local env = setmetatable({
+			script = makeScript(specPath),
+			require = patched_require,
+		}, { __index = _G })
+		local chunk, err = load(source, "@" .. specPath, "t", env)
 		if not chunk then
 			print("compile error: " .. tostring(err))
 			report.failed = report.failed + 1
 		else
-			local specFn = chunk()
-			if type(specFn) == "function" then
-				local ok, runErr = pcall(specFn)
-				if not ok then
+			local ok, specResult = pcall(chunk)
+			if not ok then
+				print("load error: " .. tostring(specResult))
+				report.failed = report.failed + 1
+			elseif type(specResult) == "function" then
+				local runOk, runErr = pcall(specResult)
+				if not runOk then
 					print("spec error: " .. tostring(runErr))
 					report.failed = report.failed + 1
 				end
+			else
+				print("spec did not return a function")
+				report.failed = report.failed + 1
 			end
 		end
 	end
