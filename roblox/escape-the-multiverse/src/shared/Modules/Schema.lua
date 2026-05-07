@@ -3,7 +3,7 @@
 
 local Schema = {}
 
-Schema.CURRENT_VERSION = 1
+Schema.CURRENT_VERSION = 2
 
 -- A brand-new profile.
 function Schema.default(): any
@@ -25,12 +25,22 @@ function Schema.default(): any
 		badgesAwarded = {},
 		ownedGamePasses = {},
 		region = "GLOBAL",
+		-- v2: tracks one-shot AchievementsService grants. Map id → true.
+		awardedAchievements = {},
 	}
 end
 
 -- Migrations from older versions. Each entry mutates a profile in place from
 -- version (i) to (i+1). Add new versions here.
-local MIGRATIONS: { [number]: (any) -> () } = {}
+local MIGRATIONS: { [number]: (any) -> () } = {
+	-- v1 → v2: add awardedAchievements set so AchievementsService can persist
+	-- one-shot grants. Existing players keep all their other progression.
+	[1] = function(profile: any)
+		if profile.awardedAchievements == nil then
+			profile.awardedAchievements = {}
+		end
+	end,
+}
 
 function Schema.migrate(profile: any): any
 	if type(profile) ~= "table" then

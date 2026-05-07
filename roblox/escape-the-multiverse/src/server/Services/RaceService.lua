@@ -9,6 +9,7 @@ local Race = Shared.Config.Race
 local Difficulty = Shared.Config.Difficulty
 local Validate = Shared.Modules.Validate
 local RNG = Shared.Modules.RNG
+local Signal = Shared.Modules.Signal
 
 local Queue = require(game:GetService("ServerScriptService").Server.Race.RaceQueue)
 local Arena = require(game:GetService("ServerScriptService").Server.Race.RaceArena)
@@ -21,6 +22,10 @@ local previousPositions: { [Player]: CFrame } = {}
 
 function RaceService:Init(deps: any)
 	self._deps = deps
+	-- Server-side Signal fired (winner, loser, world, startStage) after the
+	-- scorer resolves. AchievementsService listens for first-race-win grants.
+	-- Net.RaceResult continues to fire to clients independently.
+	self.OnWin = Signal.new()
 end
 
 local function teleport(player: Player, cf: CFrame)
@@ -86,6 +91,10 @@ local function startRace(self, playerA: Player, playerB: Player)
 		Net.event("RaceResult"):FireClient(loser, false)
 		self._deps.Currency:Add(winner, "soft", Race.winnerSoft)
 		self._deps.Currency:Add(loser, "soft", Race.loserSoft)
+		-- Notify any server-side listeners (e.g. AchievementsService).
+		if self.OnWin then
+			self.OnWin:Fire(winner, loser, world, startStage)
+		end
 		-- First-race-win badge.
 		local Badges = Shared.Config.Badges
 		if Badges.FirstRaceWin and Badges.FirstRaceWin ~= 0 then

@@ -18,4 +18,6 @@ return {
 	SecretRoomFound = "SecretRoomFound",
 	ScreenShake = "ScreenShake",
 	ProfileSync = "ProfileSync",
+	AchievementUnlocked = "AchievementUnlocked",
+	OpenAchievementsPanel = "OpenAchievementsPanel",
 }

@@ -123,7 +123,7 @@ local function readModule(fsPath)
 		error("missing module file: " .. fsPath)
 	end
 	local source = fs.readFile(fsPath)
-	local chunk, err = loadstring(source, "@" .. fsPath)
+	local chunk, err = load(source, "@" .. fsPath)
 	if not chunk then
 		error("compile " .. fsPath .. ": " .. tostring(err))
 	end
@@ -264,6 +264,7 @@ local SPECS = {
 	"tests/PityCalculator.spec.lua",
 	"tests/Gacha.spec.lua",
 	"tests/StageTable.spec.lua",
+	"tests/Achievements.spec.lua",
 }
 
 print("ETM lune test runner")
@@ -275,7 +276,7 @@ for _, specPath in ipairs(SPECS) do
 	else
 		print("\n[" .. specPath .. "]")
 		local source = fs.readFile(specPath)
-		local chunk, err = loadstring(source, "@" .. specPath)
+		local chunk, err = load(source, "@" .. specPath)
 		if not chunk then
 			print("compile error: " .. tostring(err))
 			report.failed = report.failed + 1

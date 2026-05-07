@@ -32,6 +32,7 @@ local order = {
 	"ShopUIController",
 	"RaceUIController",
 	"MusicController",
+	"AchievementsController",
 }
 
 local mods = {}

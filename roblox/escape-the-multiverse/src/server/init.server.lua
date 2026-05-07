@@ -28,8 +28,10 @@ local DeathTracker = require(Services.DeathTrackerService)
 local Gacha = require(Services.GachaService)
 local Race = require(Services.RaceService)
 local SpawnHub = require(Services.SpawnHubService)
+local Achievements = require(Services.AchievementsService)
 
 local WorldBuilder = require(ServerScriptService.Server.World.WorldBuilder)
+local Diagnostics = require(ServerScriptService.Server.Diagnostics)
 
 local deps: any = {}
 deps.AntiExploit = AntiExploit
@@ -49,7 +51,9 @@ deps.Trail = Trail
 deps.DeathTracker = DeathTracker
 deps.Gacha = Gacha
 deps.Race = Race
+deps.Achievements = Achievements
 deps.WorldBuilder = WorldBuilder
+deps.Diagnostics = Diagnostics
 
 local order = {
 	AntiExploit,
@@ -68,8 +72,10 @@ local order = {
 	DeathTracker,
 	Gacha,
 	Race,
+	Achievements,
 	SpawnHub,
 	WorldBuilder,
+	Diagnostics,
 }
 
 for _, svc in ipairs(order) do

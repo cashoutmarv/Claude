@@ -6,6 +6,7 @@ local Players = game:GetService("Players")
 
 local Shared = require(game:GetService("ReplicatedStorage").Shared)
 local Net = Shared.Net
+local Signal = Shared.Modules.Signal
 
 local DeathTrackerService = {}
 DeathTrackerService._deps = nil :: any
@@ -14,13 +15,17 @@ local counts: { [Player]: number } = {}
 
 function DeathTrackerService:Init(deps: any)
 	self._deps = deps
+	-- Server-side Signal fired (player, newCount) after every death so
+	-- AchievementsService and similar can react. Backwards-compatible: the
+	-- existing Net.DeathCountChanged broadcast still fires for clients.
+	self.OnDeath = Signal.new()
 end
 
 local function broadcast(player: Player)
 	Net.event("DeathCountChanged"):FireAllClients(player.UserId, counts[player] or 0)
 end
 
-local function bindPlayer(player: Player)
+local function bindPlayer(self, player: Player)
 	counts[player] = 0
 	local function bindChar(char)
 		local hum = char:WaitForChild("Humanoid", 5)
@@ -30,6 +35,9 @@ local function bindPlayer(player: Player)
 		hum.Died:Connect(function()
 			counts[player] = (counts[player] or 0) + 1
 			broadcast(player)
+			if self.OnDeath then
+				self.OnDeath:Fire(player, counts[player])
+			end
 		end)
 	end
 	if player.Character then
@@ -40,11 +48,11 @@ end
 
 function DeathTrackerService:Start()
 	for _, plr in ipairs(Players:GetPlayers()) do
-		bindPlayer(plr)
+		bindPlayer(self, plr)
 		broadcast(plr)
 	end
 	Players.PlayerAdded:Connect(function(plr)
-		bindPlayer(plr)
+		bindPlayer(self, plr)
 		-- Send the new joiner everyone else's current counts.
 		for other in pairs(counts) do
 			Net.event("DeathCountChanged"):FireClient(plr, other.UserId, counts[other])
