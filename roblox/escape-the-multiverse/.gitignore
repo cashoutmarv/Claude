@@ -1,0 +1,8 @@
+build/
+*.rbxlx
+*.rbxl
+*.lock
+Packages/
+ServerPackages/
+DevPackages/
+.DS_Store
