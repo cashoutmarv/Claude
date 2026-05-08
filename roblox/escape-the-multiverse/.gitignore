@@ -1,0 +1,13 @@
+build/
+*.rbxlx
+*.rbxl
+*.lock
+Packages/
+ServerPackages/
+DevPackages/
+.DS_Store
+
+# Ship the built place file in dist/ so non-developer users can import
+# directly without installing Rojo.
+!dist/*.rbxlx
+!dist/*.rbxl

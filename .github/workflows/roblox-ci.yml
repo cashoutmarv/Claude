@@ -1,0 +1,73 @@
+name: Roblox CI
+
+on:
+  pull_request:
+    paths:
+      - 'roblox/escape-the-multiverse/**'
+      - '.github/workflows/roblox-ci.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'roblox/escape-the-multiverse/**'
+      - '.github/workflows/roblox-ci.yml'
+  workflow_dispatch:
+
+jobs:
+  lint-and-test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: roblox/escape-the-multiverse
+    env:
+      SELENE_VERSION: 0.27.1
+      STYLUA_VERSION: 0.20.0
+      LUNE_VERSION: 0.8.9
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Selene
+        working-directory: ${{ github.workspace }}
+        run: |
+          set -euo pipefail
+          cd "$RUNNER_TEMP"
+          curl -fsSL -o selene.zip \
+            "https://github.com/Kampfkarren/selene/releases/download/${SELENE_VERSION}/selene-${SELENE_VERSION}-linux.zip"
+          unzip -q selene.zip
+          chmod +x selene
+          sudo mv selene /usr/local/bin/selene
+          selene --version
+
+      - name: Install StyLua
+        working-directory: ${{ github.workspace }}
+        run: |
+          set -euo pipefail
+          cd "$RUNNER_TEMP"
+          curl -fsSL -o stylua.zip \
+            "https://github.com/JohnnyMorganz/StyLua/releases/download/v${STYLUA_VERSION}/stylua-linux-x86_64.zip"
+          unzip -q stylua.zip
+          chmod +x stylua
+          sudo mv stylua /usr/local/bin/stylua
+          stylua --version
+
+      - name: Install Lune
+        working-directory: ${{ github.workspace }}
+        run: |
+          set -euo pipefail
+          cd "$RUNNER_TEMP"
+          curl -fsSL -o lune.zip \
+            "https://github.com/lune-org/lune/releases/download/v${LUNE_VERSION}/lune-${LUNE_VERSION}-linux-x86_64.zip"
+          unzip -q lune.zip
+          chmod +x lune
+          sudo mv lune /usr/local/bin/lune
+          lune --version
+
+      - name: Selene (warnings only)
+        continue-on-error: true
+        run: selene src/ || echo "::warning::Selene found issues — non-fatal for now"
+
+      - name: StyLua check (warnings only)
+        continue-on-error: true
+        run: stylua --check src/ || echo "::warning::StyLua format drift — non-fatal for now"
+
+      - name: Pure-logic specs (lune) — hard gate
+        run: lune run tests/runner.lua
