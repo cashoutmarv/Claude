@@ -117,7 +117,7 @@ export class GameOverScene extends Phaser.Scene {
       label: "Home",
       sub: null,
       color: 0x2a2a3a, textColor: "#cfd2e6",
-      action: () => this.exitTo("HomeScene"),
+      action: () => this.exitTo("HubScene"),
     });
 
     const btnW = Math.min(280, width * 0.7);

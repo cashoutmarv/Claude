@@ -11,7 +11,7 @@ import { applyEquippedToStats, getEquipped } from "../services/inventory.js";
 import { VIP } from "../services/vip.js";
 import { Subscription } from "../services/subscription.js";
 import { Achievements, onUnlock } from "../services/achievements.js";
-import { addGold, addGems } from "../services/currency.js";
+import { addGold, addGems, addMaterials } from "../services/currency.js";
 import { Storage } from "../services/storage.js";
 
 export class GameScene extends Phaser.Scene {
@@ -293,6 +293,26 @@ export class GameScene extends Phaser.Scene {
     }
     addGold(ECONOMY.goldRunCompletionFlat, "run_completion");
     this.goldEarnedThisRun += ECONOMY.goldRunCompletionFlat;
+
+    // Materials drop: tiny per-kill drip + run completion + raid bonus.
+    const carry = Storage.load().__hubCarry || {};
+    const isRaidRun = !!carry.isRaid;
+    const matsFromKills = Math.floor((this.kills || 0) * ECONOMY.materialsPerKill);
+    const matsFromRun   = ECONOMY.materialsRunCompletion;
+    const matsRaidBonus = isRaidRun ? ECONOMY.materialsRaidReward : 0;
+    const matsTotal = matsFromKills + matsFromRun + matsRaidBonus;
+    if (matsTotal > 0) addMaterials(matsTotal, isRaidRun ? "raid_run" : "cave_run");
+    this.materialsEarnedThisRun = matsTotal;
+
+    // Pass raid completion back to the hub. HubScene reads + clears
+    // __hubCarry on re-entry. We only WRITE on raid runs; a non-raid
+    // "Play Again" must leave any pending raid-complete flag alone so
+    // the hub still reads it when the player eventually returns.
+    if (isRaidRun) {
+      Storage.mutate((s) => {
+        s.__hubCarry = { raidCompleted: true, materials: matsTotal };
+      });
+    }
 
     this.scene.stop("HUDScene");
     // Pause (not stop) so we can resume on revive without losing run state.

@@ -5,7 +5,7 @@
 // Preferences plugin without touching callers.
 
 const KEY = "dungeondrift.save.v2";
-const VERSION = 3;
+const VERSION = 4;
 
 // Default save shape. Adding a new field here = automatic migration: any
 // missing key is filled in on load.
@@ -33,8 +33,9 @@ const DEFAULTS = () => ({
   },
   // Achievement claim record: { [achievementId]: claimedTimestamp }.
   claimedAchievements: {},
-  // Currency wallet.
-  wallet: { gold: 0, gems: 0, exchangeTokens: 0 },
+  // Currency wallet. `materials` is the new hub-upgrade currency dropped
+  // from cave runs and hub raids.
+  wallet: { gold: 0, gems: 0, exchangeTokens: 0, materials: 0 },
   // Inventory.
   inventory: {
     // ownedCharacters[id] = { level, shards }
@@ -62,6 +63,36 @@ const DEFAULTS = () => ({
   iap: { adFreeOwned: false, starterPackBought: false },
   // Ads.
   ads: { dailyAdGemEarnings: 0, dailyAdResetDay: 0 },
+  // World archetype + companion choice from the KH-style intro. `archetype`
+  // null = intro not yet completed; the boot scene routes to IntroScene
+  // until this is set.
+  world: {
+    archetype: null,        // e.g. "whispering_woods"
+    firstFriend: null,      // companion id who lands first
+    tone: null,             // dialogue tone derived from family answer
+    answers: { passion: null, seeking: null, family: null },
+    chosenAt: 0,
+  },
+  // Player identity carried across runs. The intro asks for a first name
+  // (optional — defaults to "Traveler").
+  player: { name: "Traveler" },
+  // Plot beat progression. Each entry in seenBeats is a beat id that has
+  // already been shown so it never replays.
+  plot: {
+    seenBeats: [],
+    friendsFound: [],       // companion ids in the order they arrive
+    nextRaidUnlockAtRuns: 1, // first raid unlocks after run #1
+  },
+  // Hub building upgrade levels. Each building has a level 1..N.
+  hub: {
+    buildings: {
+      tavern:   { level: 1 },
+      market:   { level: 1 },
+      garage:   { level: 1 },
+      vipLodge: { level: 1 },
+    },
+    raidsCompleted: 0,
+  },
 });
 
 function deepMerge(into, from) {
@@ -93,6 +124,21 @@ function migrate(saved) {
     }
     if (saved.equipped && saved.equipped.character === "adventurer") {
       saved.equipped.character = "stable_pony";
+    }
+  }
+  if (v < 4) {
+    // v3 → v4: hub world introduced. Pre-existing saves never saw the
+    // intro, so we mark them with a default archetype so they skip the
+    // intro and land directly in the hub. New saves (no prior data) hit
+    // the DEFAULTS path with archetype=null and run the intro.
+    if (!saved.world) {
+      saved.world = {
+        archetype: "whispering_woods",
+        firstFriend: "rin",
+        tone: "warm",
+        answers: { passion: "connection", seeking: "belonging", family: "chosen" },
+        chosenAt: Date.now(),
+      };
     }
   }
   return saved;

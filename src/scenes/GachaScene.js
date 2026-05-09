@@ -30,7 +30,7 @@ export class GachaScene extends Phaser.Scene {
     const banner = BANNERS[this.bannerIndex];
 
     // Back button.
-    this.makeButton(60, 64, 80, 32, "← Back", 0x2a2a3a, "#cfd2e6", () => this.scene.start("HomeScene"));
+    this.makeButton(60, 64, 80, 32, "← Back", 0x2a2a3a, "#cfd2e6", () => this.scene.start("HubScene"));
 
     // Banner tabs.
     const tabsY = 110;
