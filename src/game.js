@@ -1,18 +1,11 @@
 import { BootScene } from "./scenes/BootScene.js";
-import { HomeScene } from "./scenes/HomeScene.js";
-import { GameScene } from "./scenes/GameScene.js";
-import { HUDScene } from "./scenes/HUDScene.js";
-import { UpgradeScene } from "./scenes/UpgradeScene.js";
-import { GameOverScene } from "./scenes/GameOverScene.js";
-import { GachaScene } from "./scenes/GachaScene.js";
-import { ShopScene } from "./scenes/ShopScene.js";
-import { InventoryScene } from "./scenes/InventoryScene.js";
-import { VIPScene } from "./scenes/VIPScene.js";
+import { IntroScene } from "./scenes/IntroScene.js";
+import { HubScene } from "./scenes/HubScene.js";
 
 const config = {
   type: Phaser.AUTO,
   parent: "game",
-  backgroundColor: "#0b0b14",
+  backgroundColor: "#000000",
   scale: {
     mode: Phaser.Scale.RESIZE,
     autoCenter: Phaser.Scale.CENTER_BOTH,
@@ -26,19 +19,7 @@ const config = {
   fps: { target: 60, smoothStep: true },
   render: { pixelArt: false, antialias: true },
   input: { activePointers: 3 },
-  scene: [
-    BootScene,
-    HomeScene,
-    GameScene,
-    HUDScene,
-    UpgradeScene,
-    GameOverScene,
-    GachaScene,
-    ShopScene,
-    InventoryScene,
-    VIPScene,
-  ],
+  scene: [BootScene, IntroScene, HubScene],
 };
 
-// eslint-disable-next-line no-new
 new Phaser.Game(config);

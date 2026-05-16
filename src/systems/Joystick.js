@@ -1,6 +1,6 @@
-// Lightweight virtual joystick. Touch/drag anywhere on the left half of the
-// screen to control the player. The base appears where the touch lands so the
-// player never has to reach for a fixed UI spot.
+// Virtual touch joystick. Touch/drag anywhere on the left half of the screen;
+// the base appears where the finger lands so the player never has to reach
+// for a fixed UI spot. Keyboard movement is handled by the consumer scene.
 
 export class Joystick {
   constructor(scene, { side = "left", radius = 70 } = {}) {
@@ -39,9 +39,6 @@ export class Joystick {
   onDown(p) {
     if (this.active) return;
     if (!this.isOnOurSide(p)) return;
-    // Ignore taps while a modal overlay (level-up / game-over) is showing.
-    const sm = this.scene.scene;
-    if (sm.isActive("UpgradeScene") || sm.isActive("GameOverScene")) return;
     this.active = true;
     this.pointerId = p.id;
     this.originX = p.x;
@@ -62,7 +59,6 @@ export class Joystick {
       dy = (dy / len) * max;
     }
     this.thumb.setPosition(this.originX + dx, this.originY + dy);
-    // Normalize for consumer.
     this.dx = dx / max;
     this.dy = dy / max;
   }
@@ -78,7 +74,6 @@ export class Joystick {
     this.thumb.setVisible(false);
   }
 
-  // Returns {x, y} normalized [-1, 1].
   getVector() {
     return { x: this.dx, y: this.dy };
   }
