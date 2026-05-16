@@ -11,6 +11,7 @@
 // when hovered/tapped. The whole scene reads like a memory.
 
 import { World } from "../services/world.js";
+import { synthesizeWorld, describeStack } from "../services/worldgen.js";
 
 const GOLD       = "#e6c474";
 const GOLD_DIM   = "#7a6a3a";
@@ -74,6 +75,8 @@ export class IntroScene extends Phaser.Scene {
 
     this.answers = { passion: null, seeking: null, family: null };
     this.playerName = "";
+    this.worldName = "";
+    this.suggestedWorldName = "";
 
     this._showOpening();
 
@@ -180,6 +183,16 @@ export class IntroScene extends Phaser.Scene {
             if (idx + 1 < QUESTIONS.length) {
               this.time.delayedCall(300, () => this._showQuestion(idx + 1));
             } else {
+              // All three answers picked. Compute a suggested world name
+              // and description for the upcoming prompts.
+              const preview = synthesizeWorld({
+                passion: this.answers.passion,
+                seeking: this.answers.seeking,
+                family:  this.answers.family,
+                name:    "",
+              });
+              this.suggestedWorldName = preview.name;
+              this.suggestedStack = preview.stack;
               this.time.delayedCall(300, () => this._showNamePrompt());
             }
           },
@@ -206,7 +219,10 @@ export class IntroScene extends Phaser.Scene {
     }).setOrigin(0.5).setInteractive({ useHandCursor: true });
     skipT.on("pointerover", () => skipT.setColor(GOLD_BRIGHT));
     skipT.on("pointerout",  () => skipT.setColor(GOLD_DIM));
-    skipT.on("pointerdown", () => { this.playerName = ""; this._finish([promptT, sub, nameT, skipT]); });
+    skipT.on("pointerdown", () => {
+      this.playerName = "";
+      this._fadeAndContinue([promptT, sub, nameT, skipT], () => this._showWorldNamePrompt());
+    });
 
     const updateDisplay = () => {
       const display = this.playerName.length > 0 ? this.playerName : "_";
@@ -215,7 +231,7 @@ export class IntroScene extends Phaser.Scene {
 
     const keydown = (ev) => {
       if (ev.key === "Enter") {
-        this._finish([promptT, sub, nameT, skipT]);
+        this._fadeAndContinue([promptT, sub, nameT, skipT], () => this._showWorldNamePrompt());
         return;
       }
       if (ev.key === "Backspace") {
@@ -232,22 +248,82 @@ export class IntroScene extends Phaser.Scene {
     this.events.once("shutdown", () => this.input.keyboard.off("keydown", keydown));
   }
 
+  // Brief helper: fade out a set of objects, destroy them, then continue.
+  _fadeAndContinue(toFade, next) {
+    this.tweens.add({
+      targets: toFade, alpha: 0, duration: 600,
+      onComplete: () => { toFade.forEach((o) => o.destroy && o.destroy()); next(); },
+    });
+  }
+
+  _showWorldNamePrompt() {
+    const { width, height } = this.scale;
+    const promptT = this._line(height * 0.24, "And what is this place called?", { size: 24 });
+    const sub = this._line(height * 0.32, "(type a name, or press Enter to accept the suggestion)", { size: 13, italic: true, color: GOLD_DIM });
+
+    // Start with the procedural suggestion as the current value. The player
+    // can backspace to clear and type their own.
+    this.worldName = this.suggestedWorldName || "";
+    const nameT = this.add.text(width / 2, height * 0.48, this.worldName || "_", {
+      fontFamily: FONT, fontSize: "28px", color: GOLD_BRIGHT, fontStyle: "italic",
+    }).setOrigin(0.5).setShadow(0, 0, "#e6c474", 10, true, true);
+
+    const skipT = this.add.text(width / 2, height * 0.62, "accept the suggestion", {
+      fontFamily: FONT, fontSize: "14px", color: GOLD_DIM, fontStyle: "italic",
+    }).setOrigin(0.5).setInteractive({ useHandCursor: true });
+    skipT.on("pointerover", () => skipT.setColor(GOLD_BRIGHT));
+    skipT.on("pointerout",  () => skipT.setColor(GOLD_DIM));
+    skipT.on("pointerdown", () => {
+      this._fadeAndContinue([promptT, sub, nameT, skipT], () => this._showReveal());
+    });
+
+    const updateDisplay = () => nameT.setText(this.worldName.length > 0 ? this.worldName : "_");
+
+    const keydown = (ev) => {
+      if (ev.key === "Enter") {
+        this._fadeAndContinue([promptT, sub, nameT, skipT], () => this._showReveal());
+        return;
+      }
+      if (ev.key === "Backspace") {
+        this.worldName = this.worldName.slice(0, -1);
+        updateDisplay();
+        return;
+      }
+      if (ev.key.length === 1 && this.worldName.length < 32 && /[\w '\-.]/.test(ev.key)) {
+        this.worldName += ev.key;
+        updateDisplay();
+      }
+    };
+    this.input.keyboard.on("keydown", keydown);
+    this.events.once("shutdown", () => this.input.keyboard.off("keydown", keydown));
+  }
+
+  _showReveal() {
+    const { width, height } = this.scale;
+    const displayName = (this.worldName && this.worldName.trim()) || this.suggestedWorldName;
+    const desc = this.suggestedStack ? describeStack(this.suggestedStack) : "";
+
+    const t1 = this._line(height * 0.40, displayName, { size: 30 });
+    const t2 = this._line(height * 0.50, desc, { size: 16, italic: true, color: GOLD_DIM });
+    const t3 = this._line(height * 0.62, "the world remembers.", { size: 22 });
+
+    this.time.delayedCall(2400, () => this._finish([t1, t2, t3]));
+  }
+
   _finish(toFade) {
     World.applyIntroAnswers({
-      passion: this.answers.passion,
-      seeking: this.answers.seeking,
-      family:  this.answers.family,
-      name:    this.playerName,
+      passion:   this.answers.passion,
+      seeking:   this.answers.seeking,
+      family:    this.answers.family,
+      name:      this.playerName,
+      worldName: this.worldName,
     });
 
     this.tweens.add({
       targets: toFade, alpha: 0, duration: 700,
       onComplete: () => {
-        const closing = this._line(this.scale.height * 0.5, "the world remembers.", { size: 26 });
-        this.time.delayedCall(1800, () => {
-          this.cameras.main.fadeOut(1100, 0, 0, 0);
-          this.time.delayedCall(1200, () => this.scene.start("HubScene"));
-        });
+        this.cameras.main.fadeOut(1100, 0, 0, 0);
+        this.time.delayedCall(1200, () => this.scene.start("HubScene"));
       },
     });
   }

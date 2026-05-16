@@ -1,10 +1,12 @@
-// World/plot helper. Reads/writes the intro choices, looks up the active
-// archetype palette, and tracks plot beat progression.
+// World/plot helper. Reads/writes the intro choices, synthesizes the world
+// trait stack from those choices, and tracks plot beat progression.
+//
+// The catalog of dials lives in config/traits.js. The synthesis function
+// lives in services/worldgen.js. This module is the thin facade other
+// scenes call into.
 
 import { Storage } from "./storage.js";
-import {
-  WORLDS, getWorld, PASSION_TO_WORLD,
-} from "../config/worlds.js";
+import { synthesizeWorld, rebuildWorld } from "./worldgen.js";
 import {
   COMPANIONS, getCompanion,
   SEEKING_TO_FIRST_FRIEND, FAMILY_TO_TONE,
@@ -13,29 +15,33 @@ import {
 export const World = {
   // Has the KH-style intro been completed?
   hasIntro() {
-    return !!Storage.load().world.archetype;
+    return !!Storage.load().world.stack;
   },
 
-  // Apply intro answers → derive world archetype + first friend + tone.
-  applyIntroAnswers({ passion, seeking, family, name }) {
-    const archetypeId = PASSION_TO_WORLD[passion] || "whispering_woods";
-    const friendId    = SEEKING_TO_FIRST_FRIEND[seeking] || "rin";
-    const tone        = FAMILY_TO_TONE[family] || "warm";
+  // Apply intro answers → synthesize trait stack, derive friend + tone.
+  applyIntroAnswers({ passion, seeking, family, name, worldName }) {
+    const synth = synthesizeWorld({ passion, seeking, family, name });
+    const friendId = SEEKING_TO_FIRST_FRIEND[seeking] || "rin";
+    const tone     = FAMILY_TO_TONE[family] || "warm";
     Storage.mutate((s) => {
-      s.world.archetype   = archetypeId;
+      s.world.stack       = synth.stack;
+      s.world.worldName   = (worldName && worldName.trim()) || synth.name;
       s.world.firstFriend = friendId;
       s.world.tone        = tone;
       s.world.answers     = { passion, seeking, family };
       s.world.chosenAt    = Date.now();
+      // Clear legacy archetype so future reads only see the new stack.
+      s.world.archetype   = null;
       if (name && name.trim().length > 0) {
         s.player.name = name.trim().slice(0, 16);
       }
     });
   },
 
-  // Active world definition (palette + name).
+  // Active world view — fully composed palette + stack + flavor fields.
   current() {
-    return getWorld(Storage.load().world.archetype);
+    const s = Storage.load();
+    return rebuildWorld(s.world.stack, s.world.worldName);
   },
 
   // Active starting companion.
@@ -46,6 +52,13 @@ export const World = {
   // Player display name.
   playerName() {
     return Storage.load().player.name || "Traveler";
+  },
+
+  // Rename the active world (bonfire affordance).
+  renameWorld(newName) {
+    const trimmed = (newName || "").trim().slice(0, 32);
+    if (!trimmed) return;
+    Storage.mutate((s) => { s.world.worldName = trimmed; });
   },
 
   // Plot beats.

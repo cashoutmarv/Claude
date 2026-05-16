@@ -5,7 +5,7 @@
 // Preferences plugin without touching callers.
 
 const KEY = "dungeondrift.save.v2";
-const VERSION = 4;
+const VERSION = 5;
 
 // Default save shape. Adding a new field here = automatic migration: any
 // missing key is filled in on load.
@@ -63,11 +63,16 @@ const DEFAULTS = () => ({
   iap: { adFreeOwned: false, starterPackBought: false },
   // Ads.
   ads: { dailyAdGemEarnings: 0, dailyAdResetDay: 0 },
-  // World archetype + companion choice from the KH-style intro. `archetype`
-  // null = intro not yet completed; the boot scene routes to IntroScene
-  // until this is set.
+  // World synthesis from the KH-style intro. `stack` null = intro not yet
+  // completed; the boot scene routes to IntroScene until this is set.
+  //
+  // `stack` is the resolved dial pick produced by services/worldgen.js. The
+  // legacy `archetype` field is preserved on disk for diagnostics but is no
+  // longer consulted at runtime once a `stack` exists.
   world: {
-    archetype: null,        // e.g. "whispering_woods"
+    archetype: null,        // legacy: kept for v4 saves migrating to v5
+    stack: null,            // { biome, architecture, tone, weather, ambient }
+    worldName: "",          // procedural name; player can rename at bonfire
     firstFriend: null,      // companion id who lands first
     tone: null,             // dialogue tone derived from family answer
     answers: { passion: null, seeking: null, family: null },
@@ -139,6 +144,24 @@ function migrate(saved) {
         answers: { passion: "connection", seeking: "belonging", family: "chosen" },
         chosenAt: Date.now(),
       };
+    }
+  }
+  if (v < 5) {
+    // v4 → v5: archetype catalog replaced by trait-stack synthesis. Derive
+    // a stack from the old archetype id so existing players keep their
+    // chosen world. Lookup is intentionally inline so this migration can
+    // outlive the deletion of config/worlds.js.
+    if (saved.world && saved.world.archetype && !saved.world.stack) {
+      const LEGACY = {
+        whispering_woods: { biome: "forest",   architecture: "cottage",  tone: "warm",    weather: "goldenHour", ambient: "dawn" },
+        sunscar_dunes:    { biome: "desert",   architecture: "tent",     tone: "warm",    weather: "clear",      ambient: "day" },
+        drowning_tide:    { biome: "ocean",    architecture: "stilt",    tone: "cool",    weather: "drizzle",    ambient: "day" },
+        skyborne_isles:   { biome: "sky",      architecture: "pagoda",   tone: "cool",    weather: "clear",      ambient: "dawn" },
+        emberveil:        { biome: "volcanic", architecture: "ruin",     tone: "warm",    weather: "fog",        ambient: "dusk" },
+        starlit_grotto:   { biome: "cosmic",   architecture: "ruin",     tone: "cool",    weather: "aurora",     ambient: "night" },
+      };
+      saved.world.stack = LEGACY[saved.world.archetype] || LEGACY.whispering_woods;
+      saved.world.worldName = saved.world.worldName || "";
     }
   }
   return saved;
