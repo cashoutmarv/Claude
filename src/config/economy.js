@@ -29,6 +29,12 @@ export const ECONOMY = {
   // on top of normal gold so the meta loop opens up faster.
   newPlayerRunBonusRuns: 5,
   newPlayerRunBonusGold: 100,
+
+  // Hub materials. Dropped in tiny amounts from cave runs; bigger reward
+  // for clearing a raid run. Spent on building upgrades in the hub.
+  materialsPerKill: 0.05,        // ~1 mat per 20 kills, rounded down at run end
+  materialsRunCompletion: 4,
+  materialsRaidReward: 30,
 };
 
 // Single source of truth for IAP prices/values. Real money values are set

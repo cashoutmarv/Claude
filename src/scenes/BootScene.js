@@ -1,4 +1,5 @@
 import { ENEMIES, XP } from "../config/balance.js";
+import { World } from "../services/world.js";
 
 // Procedural placeholder sprites. Replace with atlas swap at polish time.
 
@@ -17,7 +18,13 @@ export class BootScene extends Phaser.Scene {
   }
 
   create() {
-    this.scene.start("HomeScene");
+    // First-time players see the KH-style intro and pick a world; returning
+    // players go straight to the hub.
+    if (!World.hasIntro()) {
+      this.scene.start("IntroScene");
+    } else {
+      this.scene.start("HubScene");
+    }
   }
 
   // Top-down warrior. Sprite faces RIGHT at rotation=0; GameScene rotates it

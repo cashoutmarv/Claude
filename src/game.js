@@ -1,5 +1,8 @@
 import { BootScene } from "./scenes/BootScene.js";
 import { HomeScene } from "./scenes/HomeScene.js";
+import { IntroScene } from "./scenes/IntroScene.js";
+import { HubScene } from "./scenes/HubScene.js";
+import { DialogueScene } from "./scenes/DialogueScene.js";
 import { GameScene } from "./scenes/GameScene.js";
 import { HUDScene } from "./scenes/HUDScene.js";
 import { UpgradeScene } from "./scenes/UpgradeScene.js";
@@ -28,11 +31,14 @@ const config = {
   input: { activePointers: 3 },
   scene: [
     BootScene,
+    IntroScene,
+    HubScene,
     HomeScene,
     GameScene,
     HUDScene,
     UpgradeScene,
     GameOverScene,
+    DialogueScene,
     GachaScene,
     ShopScene,
     InventoryScene,

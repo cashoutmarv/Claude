@@ -13,7 +13,7 @@ function emit() {
 
 export function getBalances() {
   const w = Storage.load().wallet;
-  return { gold: w.gold, gems: w.gems, tokens: w.exchangeTokens };
+  return { gold: w.gold, gems: w.gems, tokens: w.exchangeTokens, materials: w.materials || 0 };
 }
 
 export function addGold(amount, reason = "") {
@@ -34,6 +34,21 @@ export function addTokens(amount) {
   if (amount <= 0) return;
   Storage.mutate((s) => { s.wallet.exchangeTokens += Math.floor(amount); });
   emit();
+}
+
+export function addMaterials(amount, reason = "") {
+  if (amount <= 0) return;
+  Storage.mutate((s) => { s.wallet.materials = (s.wallet.materials || 0) + Math.floor(amount); });
+  if (reason) console.info(`[currency] +${Math.floor(amount)}mat (${reason})`);
+  emit();
+}
+
+export function spendMaterials(amount) {
+  const w = Storage.load().wallet;
+  if ((w.materials || 0) < amount) return false;
+  Storage.mutate((s) => { s.wallet.materials = (s.wallet.materials || 0) - amount; });
+  emit();
+  return true;
 }
 
 export function spendGold(amount) {

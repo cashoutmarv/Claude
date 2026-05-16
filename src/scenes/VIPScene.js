@@ -15,7 +15,7 @@ export class VIPScene extends Phaser.Scene {
 
     const { width, height } = this.scale;
 
-    this.makeButton(60, 64, 80, 32, "← Back", 0x2a2a3a, "#cfd2e6", () => this.scene.start("HomeScene"));
+    this.makeButton(60, 64, 80, 32, "← Back", 0x2a2a3a, "#cfd2e6", () => this.scene.start("HubScene"));
     this.add.text(width / 2, 64, "VIP", {
       fontFamily: "system-ui, sans-serif", fontSize: "22px", color: "#ffffff", fontStyle: "bold",
     }).setOrigin(0.5);
